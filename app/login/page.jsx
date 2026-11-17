@@ -4,6 +4,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Mail,
   LockKeyhole,
@@ -11,9 +12,47 @@ import {
   EyeOff,
   ArrowRight,
 } from "lucide-react";
+import { signIn } from "@/lib/auth-client";
+import { toast } from "sonner";
 
 export default function LoginPage() {
+  const router = useRouter();
+
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+
+    try {
+      setLoading(true);
+
+      const { data, error } = await signIn.email({
+        email: email.trim(),
+        password,
+      });
+
+      if (error) {
+        toast.error(error.message || "Login failed!");
+        return;
+      }
+
+      if (data) {
+        toast.success("Login successful! Welcome back.");
+
+        setTimeout(() => {
+          router.push("/");
+        }, 1500);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-[#f7fbf8] px-4 py-10">
@@ -66,18 +105,22 @@ export default function LoginPage() {
             <div className="h-px flex-1 bg-gray-200" />
           </div>
 
-          <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
+          <form onSubmit={handleLogin} className="space-y-5">
 
             {/* Email */}
             <div>
               <label className="mb-2 block text-sm font-semibold text-[#142B45]">
                 Email Address
               </label>
+
               <div className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 transition focus-within:border-[#35C77A] focus-within:ring-2 focus-within:ring-[#35C77A]/10">
                 <Mail size={18} className="text-gray-400" />
+
                 <input
                   type="email"
                   placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                   className="w-full py-3 text-sm text-[#142B45] outline-none placeholder:text-gray-400"
                 />
@@ -89,14 +132,19 @@ export default function LoginPage() {
               <label className="mb-2 block text-sm font-semibold text-[#142B45]">
                 Password
               </label>
+
               <div className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 transition focus-within:border-[#35C77A] focus-within:ring-2 focus-within:ring-[#35C77A]/10">
                 <LockKeyhole size={18} className="text-gray-400" />
+
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
                   className="w-full py-3 text-sm text-[#142B45] outline-none placeholder:text-gray-400"
                 />
+
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -125,10 +173,11 @@ export default function LoginPage() {
             {/* Login Button */}
             <button
               type="submit"
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#142B45] py-3.5 text-sm font-semibold text-white transition hover:bg-[#35C77A]"
+              disabled={loading}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#142B45] py-3.5 text-sm font-semibold text-white transition hover:bg-[#35C77A] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Login to Account
-              <ArrowRight size={18} />
+              {loading ? "Logging in..." : "Login to Account"}
+              {!loading && <ArrowRight size={18} />}
             </button>
           </form>
 
