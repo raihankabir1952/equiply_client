@@ -1,3 +1,4 @@
+import Categories from "@/components/home/Categories";
 import FeaturedEquipment from "@/components/home/FeaturedEquipment";
 import Hero from "@/components/home/Hero";
 import Footer from "@/components/shared/Footer";
@@ -10,6 +11,7 @@ export default function Home() {
       <main>
         <Hero />
         <FeaturedEquipment/>
+        <Categories/>
       </main>
       <Footer />
     </>
