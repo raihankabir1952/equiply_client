@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { signIn } from "@/lib/auth-client";
 import { toast } from "sonner";
+import { error } from "better-auth/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -54,6 +55,21 @@ export default function LoginPage() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    try {
+      const { error } = await signIn.social({
+        provider: "google",
+        callbackURL: window.location.origin,
+      });
+
+      if (error) {
+        toast.error(error.message || "Google login failed!");
+      }
+    } catch (error) {
+      console.error("Google login error:", error);
+      toast.error("Something went wrong. Please try again.");
+    }
+  };
   return (
     <main className="min-h-screen bg-[#f7fbf8] px-4 py-10">
       <div className="mx-auto flex w-full max-w-md flex-col items-center">
@@ -84,14 +100,15 @@ export default function LoginPage() {
 
           {/* Google Login */}
           <button
+            onClick={handleGoogleLogin}
             type="button"
             className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-200 py-3 text-sm font-semibold text-[#142B45] transition hover:bg-gray-50"
           >
             <svg viewBox="0 0 48 48" className="h-5 w-5">
-              <path fill="#EA4335" d="M24 9.5c3.5 0 6.3 1.2 8.5 3.3l6.3-6.3C34.9 2.5 29.9 0 24 0 14.6 0 6.5 5.4 3 13.3l7.4 5.7C12.2 13.1 17.6 9.5 24 9.5Z"/>
-              <path fill="#4285F4" d="M46.1 24.5c0-1.6-.2-3.1-.4-4.5H24v9h12.4c-.6 2.9-2.3 5.3-4.8 6.9l7.4 5.7c4.3-4 7.1-9.9 7.1-17.1Z"/>
-              <path fill="#FBBC05" d="M10.4 28.9c-.6-1.5-.9-3.2-.9-4.9s.3-3.4.9-4.9L3 13.3C1.1 16.5 0 20.1 0 24s1.1 7.5 3 10.7l7.4-5.8Z"/>
-              <path fill="#34A853" d="M24 48c5.9 0 10.9-1.9 14.6-5.2l-7.4-5.7c-2 1.3-4.4 2-7.2 2-6.4 0-11.8-3.6-13.6-9.1L3 35.7C6.5 42.6 14.6 48 24 48Z"/>
+              <path fill="#EA4335" d="M24 9.5c3.5 0 6.3 1.2 8.5 3.3l6.3-6.3C34.9 2.5 29.9 0 24 0 14.6 0 6.5 5.4 3 13.3l7.4 5.7C12.2 13.1 17.6 9.5 24 9.5Z" />
+              <path fill="#4285F4" d="M46.1 24.5c0-1.6-.2-3.1-.4-4.5H24v9h12.4c-.6 2.9-2.3 5.3-4.8 6.9l7.4 5.7c4.3-4 7.1-9.9 7.1-17.1Z" />
+              <path fill="#FBBC05" d="M10.4 28.9c-.6-1.5-.9-3.2-.9-4.9s.3-3.4.9-4.9L3 13.3C1.1 16.5 0 20.1 0 24s1.1 7.5 3 10.7l7.4-5.8Z" />
+              <path fill="#34A853" d="M24 48c5.9 0 10.9-1.9 14.6-5.2l-7.4-5.7c-2 1.3-4.4 2-7.2 2-6.4 0-11.8-3.6-13.6-9.1L3 35.7C6.5 42.6 14.6 48 24 48Z" />
             </svg>
             Continue with Google
           </button>
