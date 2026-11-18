@@ -50,15 +50,37 @@ export default function Navbar() {
             </Link>
           ))}
         </div>
-        
+
         {/* Desktop Auth Buttons */}
         <div className="hidden items-center gap-3 md:flex">
           {isPending ? (
             <p className="text-sm text-slate-500">Loading...</p>
           ) : session ? (
-            <p className="font-medium text-[#142B45]">
-              Welcome, {session.user.name}
-            </p>
+            <div className="flex items-center gap-3">
+              <Image
+                src={session.user.image || "/images/default-avatar.png"}
+                alt={session.user.name}
+                width={40}
+                height={40}
+                className="h-10 w-10 rounded-full border border-slate-200 object-cover"
+              />
+
+              <div>
+                <p className="text-sm font-semibold text-[#142B45]">
+                  {session.user.name}
+                </p>
+                {/* <p className="text-xs text-slate-500">
+                  {session.user.email}
+                </p> */}
+              </div>
+
+              <Link
+                href="/dashboard"
+                className="rounded-lg bg-[#142B45] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1d3b5c]"
+              >
+                Dashboard
+              </Link>
+            </div>
           ) : (
             <>
               <Link
@@ -107,11 +129,46 @@ export default function Navbar() {
           </div>
           <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4">
             {isPending ? (
-              <p>Loading...</p>
+              <p className="py-2 text-sm text-slate-500">Loading...</p>
             ) : session ? (
-              <p>Welcome, {session.user.name}</p>
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-3">
+                  <Image
+                    src={session.user.image || "/images/default-avatar.png"}
+                    alt={session.user.name}
+                    width={40}
+                    height={40}
+                    className="h-10 w-10 rounded-full object-cover"
+                  />
+
+                  <div>
+                    <p className="font-semibold text-[#142B45]">
+                      {session.user.name}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {session.user.email}
+                    </p>
+                  </div>
+                </div>
+
+                <Link
+                  href="/dashboard"
+                  onClick={() => setIsOpen(false)}
+                  className="rounded-lg bg-[#142B45] px-4 py-2 text-center text-sm font-semibold text-white"
+                >
+                  Dashboard
+                </Link>
+              </div>
             ) : (
-              <p>Please Login</p>
+              <>
+                <Link href="/login" className="rounded-lg px-4 py-2 text-center font-semibold text-[#142B45]">
+                  Login
+                </Link>
+
+                <Link href="/register" className="rounded-lg bg-[#35C77A] px-4 py-3 text-center font-semibold text-[#142B45]">
+                  Get Started
+                </Link>
+              </>
             )}
           </div>
         </div>
