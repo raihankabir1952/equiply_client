@@ -327,19 +327,6 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* Feedback Message */}
-          {message && (
-            <div
-              role="alert"
-              className={`rounded-lg px-4 py-3 text-sm ${messageType === "success"
-                ? "bg-green-50 text-green-700"
-                : "bg-red-50 text-red-600"
-                }`}
-            >
-              {message}
-            </div>
-          )}
-
           {/* Submit */}
           <button
             type="submit"

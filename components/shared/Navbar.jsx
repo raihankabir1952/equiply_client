@@ -36,6 +36,7 @@ export default function Navbar() {
   // console.log("Loading:", isPending);
   // console.log("User Name", session?.user?.name);
   // console.log("User Email", session?.user?.email);
+  console.log("User role :", session?.user?.role);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
