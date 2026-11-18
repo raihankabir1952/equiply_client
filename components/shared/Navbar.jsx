@@ -32,11 +32,10 @@ export default function Navbar() {
     }
   };
 
-  // console.log("session:", session);
-  // console.log("Loading:", isPending);
   // console.log("User Name", session?.user?.name);
   // console.log("User Email", session?.user?.email);
   console.log("User role :", session?.user?.role);
+  const dashboardLink = `/dashboard/${session?.user?.role}`;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
@@ -88,7 +87,7 @@ export default function Navbar() {
               </div>
 
               <Link
-                href="/dashboard"
+                href={dashboardLink}
                 className="rounded-lg bg-[#142B45] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1d3b5c]"
               >
                 Dashboard
@@ -177,7 +176,7 @@ export default function Navbar() {
                 </div>
 
                 <Link
-                  href="/dashboard"
+                  href={dashboardLink}
                   onClick={() => setIsOpen(false)}
                   className="rounded-lg bg-[#142B45] px-4 py-2 text-center text-sm font-semibold text-white"
                 >
