@@ -90,7 +90,8 @@ export default function Navbar() {
                 href={dashboardLink}
                 className="rounded-lg bg-[#142B45] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1d3b5c]"
               >
-                Dashboard
+                {session?.user?.role?.charAt(0).toUpperCase() +
+                  session?.user?.role?.slice(1)} Dashboard
               </Link>
               <button
                 onClick={handleLogout}
@@ -180,7 +181,8 @@ export default function Navbar() {
                   onClick={() => setIsOpen(false)}
                   className="rounded-lg bg-[#142B45] px-4 py-2 text-center text-sm font-semibold text-white"
                 >
-                  Dashboard
+                  {session?.user?.role?.charAt(0).toUpperCase() +
+                    session?.user?.role?.slice(1)} Dashboard
                 </Link>
                 <button
                   onClick={handleLogout}
