@@ -58,15 +58,41 @@ export default function RegisterPage() {
     try {
       setLoading(true);
 
+
+      let imageUrl = "";
+
+      if (photo) {
+        const formData = new FormData();
+        formData.append("image", photo);
+
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/upload/image`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          toast.error(result.message || "Image upload failed!");
+          return;
+        }
+
+        imageUrl = result.imageUrl;
+      }
+
+
       const { data, error } = await signUp.email({
         name: name.trim(),
         email: email.trim(),
         password,
+        image: imageUrl || undefined,
       });
 
       if (error) {
         toast.error(error.message || "Registration failed!");
-        setMessageType("error");
         return;
       }
 
