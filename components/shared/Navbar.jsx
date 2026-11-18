@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
+import { useSession } from "@/lib/auth-client";
 import { Menu, X, ArrowRight } from "lucide-react";
 
 const navLinks = [
@@ -14,11 +15,17 @@ const navLinks = [
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const { data: session, isPending } = useSession();
+
+  console.log("session:", session);
+  console.log("Loading:", isPending);
+  console.log("User Name", session?.user?.name);
+  console.log("User Email", session?.user?.email);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-5 py-1 lg:px-8">
-        
+
         {/* Logo */}
         <Link href="/" className="shrink-0 overflow-hidden">
           <Image
@@ -43,22 +50,33 @@ export default function Navbar() {
             </Link>
           ))}
         </div>
-
+        
         {/* Desktop Auth Buttons */}
         <div className="hidden items-center gap-3 md:flex">
-          <Link
-            href="/login"
-            className="rounded-lg px-4 py-2 text-sm font-semibold text-[#142B45] transition hover:bg-slate-100"
-          >
-            Login
-          </Link>
-          <Link
-            href="/register"
-            className="flex items-center gap-2 rounded-lg bg-[#35C77A] px-5 py-2 text-sm font-semibold text-[#142B45] transition hover:bg-[#28b96c]"
-          >
-            Get Started
-            <ArrowRight size={16} />
-          </Link>
+          {isPending ? (
+            <p className="text-sm text-slate-500">Loading...</p>
+          ) : session ? (
+            <p className="font-medium text-[#142B45]">
+              Welcome, {session.user.name}
+            </p>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="rounded-lg px-4 py-2 text-sm font-semibold text-[#142B45] transition hover:bg-slate-100"
+              >
+                Login
+              </Link>
+
+              <Link
+                href="/register"
+                className="flex items-center gap-2 rounded-lg bg-[#35C77A] px-5 py-2 text-sm font-semibold text-[#142B45] transition hover:bg-[#28b96c]"
+              >
+                Get Started
+                <ArrowRight size={16} />
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -88,20 +106,13 @@ export default function Navbar() {
             ))}
           </div>
           <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4">
-            <Link
-              href="/login"
-              onClick={() => setIsOpen(false)}
-              className="rounded-lg border border-slate-200 py-3 text-center text-sm font-semibold text-[#142B45]"
-            >
-              Login
-            </Link>
-            <Link
-              href="/register"
-              onClick={() => setIsOpen(false)}
-              className="rounded-lg bg-[#35C77A] py-3 text-center text-sm font-semibold text-[#142B45]"
-            >
-              Get Started
-            </Link>
+            {isPending ? (
+              <p>Loading...</p>
+            ) : session ? (
+              <p>Welcome, {session.user.name}</p>
+            ) : (
+              <p>Please Login</p>
+            )}
           </div>
         </div>
       )}
