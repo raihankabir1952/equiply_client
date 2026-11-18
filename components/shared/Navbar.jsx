@@ -3,8 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
-import { useSession } from "@/lib/auth-client";
-import { Menu, X, ArrowRight } from "lucide-react";
+import { useSession, signOut } from "@/lib/auth-client";
+import { Menu, X, ArrowRight, LogOut } from "lucide-react";
 
 const navLinks = [
   { name: "Home", href: "/" },
@@ -15,12 +15,27 @@ const navLinks = [
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+
   const { data: session, isPending } = useSession();
 
-  console.log("session:", session);
-  console.log("Loading:", isPending);
-  console.log("User Name", session?.user?.name);
-  console.log("User Email", session?.user?.email);
+  //logout functionality
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+
+    try {
+      await signOut();
+      setIsOpen(false);
+    } catch (error) {
+      console.error("Logout failed:", error);
+      setIsLoggingOut(false);
+    }
+  };
+
+  // console.log("session:", session);
+  // console.log("Loading:", isPending);
+  // console.log("User Name", session?.user?.name);
+  // console.log("User Email", session?.user?.email);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
@@ -69,9 +84,6 @@ export default function Navbar() {
                 <p className="text-sm font-semibold text-[#142B45]">
                   {session.user.name}
                 </p>
-                {/* <p className="text-xs text-slate-500">
-                  {session.user.email}
-                </p> */}
               </div>
 
               <Link
@@ -80,6 +92,18 @@ export default function Navbar() {
               >
                 Dashboard
               </Link>
+              <button
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                title="Logout"
+                className="rounded-lg p-2 text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed"
+              >
+                {isLoggingOut ? (
+                  <span className="text-sm">Logging out...</span>
+                ) : (
+                  <LogOut size={20} />
+                )}
+              </button>
             </div>
           ) : (
             <>
@@ -158,6 +182,21 @@ export default function Navbar() {
                 >
                   Dashboard
                 </Link>
+                <button
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  title="Logout"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 px-4 py-3 text-sm font-semibold text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed"
+                >
+                  {isLoggingOut ? (
+                    "Logging out..."
+                  ) : (
+                    <>
+                      <LogOut size={18} />
+                      Logout
+                    </>
+                  )}
+                </button>
               </div>
             ) : (
               <>
