@@ -13,6 +13,7 @@ import {
     PlusCircle,
     Package,
     ClipboardList,
+    UsersIcon
 } from "lucide-react";
 
 import {
@@ -74,6 +75,29 @@ const ownerMenu = [
     },
 ];
 
+const adminMenu = [
+    {
+        title: "All Users",
+        url: "/dashboard/admin/users",
+        icon: UsersIcon,
+    },
+    {
+        title: "All Equipment",
+        url: "/dashboard/admin/equipment",
+        icon: Package,
+    },
+    {
+        title: "All Rentals",
+        url: "/dashboard/admin/rentals",
+        icon: ClipboardList,
+    },
+    {
+        title: "My Profile",
+        url: "/dashboard/admin/profile",
+        icon: UserRound,
+    },
+];
+
 export default function DashboardSidebar() {
     const pathname = usePathname();
 
@@ -88,13 +112,20 @@ export default function DashboardSidebar() {
         return null;
     }
 
+    const isAdmin = pathname.startsWith("/dashboard/admin");
     const isOwner = pathname.startsWith("/dashboard/owner");
 
-    const menuItems = isOwner ? ownerMenu : customerMenu;
+    const menuItems = isAdmin
+        ? adminMenu
+        : isOwner
+            ? ownerMenu
+            : customerMenu;
 
-    const dashboardTitle = isOwner
-        ? "Owner Dashboard"
-        : "Customer Dashboard";
+    const dashboardTitle = isAdmin
+        ? "Admin Dashboard"
+        : isOwner
+            ? "Owner Dashboard"
+            : "Customer Dashboard";
 
     return (
         <Sidebar className="!absolute !h-auto">
