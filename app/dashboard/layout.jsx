@@ -1,6 +1,9 @@
+'use client'
+
 import Navbar from "@/components/shared/Navbar";
 import Footer from "@/components/shared/Footer";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
+import { usePathname } from "next/navigation";
 
 import {
   SidebarProvider,
@@ -9,6 +12,13 @@ import {
 } from "@/components/ui/sidebar";
 
 export default function DashboardLayout({ children }) {
+  const pathname = usePathname();
+
+  const dashboardTitle = pathname.startsWith("/dashboard/admin")
+    ? "Admin Dashboard"
+    : pathname.startsWith("/dashboard/owner")
+      ? "Owner Dashboard"
+      : "Customer Dashboard";
   return (
     <>
       <Navbar />
@@ -21,7 +31,7 @@ export default function DashboardLayout({ children }) {
             <header className="flex h-14 items-center border-b px-4">
               <SidebarTrigger />
               <span className="ml-3 font-semibold">
-                Customer Dashboard
+                {dashboardTitle}
               </span>
             </header>
 
