@@ -3,7 +3,7 @@
 
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
     Package,
     CheckCircle,
@@ -16,6 +16,11 @@ export default function OwnerDashboard() {
 
     const { data: session, isPending } = useSession();
 
+    const [equipment, setEquipment] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [rentals, setRentals] = useState([]);
+
+    // Authentication Check
     useEffect(() => {
         if (!isPending && !session) {
             router.replace("/login");
@@ -26,60 +31,101 @@ export default function OwnerDashboard() {
         }
     }, [session, isPending, router]);
 
+    // Fetch Owner Equipment
+    useEffect(() => {
+        if (!isPending && session?.user?.role === "owner") {
+            const fetchEquipment = async () => {
+                try {
+                    const res = await fetch(
+                        `${process.env.NEXT_PUBLIC_API_URL}/equipment/my-equipment`,
+                        {
+                            credentials: "include",
+                        }
+                    );
+
+                    const data = await res.json();
+
+                    if (res.ok) {
+                        setEquipment(data.equipment || []);
+                    } else {
+                        console.error(data.message);
+                    }
+                } catch (error) {
+                    console.error("Equipment fetch error:", error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            fetchEquipment();
+        }
+    }, [session, isPending]);
+
+    // Fetch Owner Rentals
+    useEffect(() => {
+        if (!isPending && session?.user?.role === "owner") {
+            const fetchRentals = async () => {
+                try {
+                    const res = await fetch(
+                        `${process.env.NEXT_PUBLIC_API_URL}/rentals/owner-rentals`,
+                        {
+                            credentials: "include",
+                        }
+                    );
+
+                    const data = await res.json();
+
+                    if (res.ok) {
+                        setRentals(data.rentals || []);
+                    } else {
+                        console.error(data.message);
+                    }
+                } catch (error) {
+                    console.error("Rental fetch error:", error);
+                }
+            };
+
+            fetchRentals();
+        }
+    }, [session, isPending]);
+
     if (isPending || !session) {
         return <p>Loading...</p>;
     }
 
+    // Equipment Statistics
     const equipmentStats = [
         {
             title: "Total Equipment",
-            value: 12,
+            value: loading ? "..." : equipment.length,
             icon: Package,
         },
         {
             title: "Available Equipment",
-            value: 8,
+            value: loading
+                ? "..."
+                : equipment.filter(
+                    (item) => item.availableQuantity > 0
+                ).length,
             icon: CheckCircle,
         },
         {
             title: "Pending Approval",
-            value: 2,
+            value: loading
+                ? "..."
+                : equipment.filter(
+                    (item) => item.status === "pending"
+                ).length,
             icon: Clock,
         },
         {
             title: "Active Rentals",
-            value: 5,
+            value: rentals.filter(
+                (rental) =>
+                    rental.status === "confirmed" ||
+                    rental.status === "active"
+            ).length,
             icon: ClipboardList,
-        },
-    ];
-
-    const recentRentals = [
-        {
-            id: 1,
-            name: "Heavy Duty Excavator",
-            category: "Construction",
-            image: "/images/equipment/excavator.jpg",
-            price: 8500,
-            status: "Active",
-            startDate: "Nov 15, 2026",
-        },
-        {
-            id: 2,
-            name: "Professional DSLR Camera",
-            category: "Photography",
-            image: "/images/equipment/camera.jpg",
-            price: 2500,
-            status: "Pending",
-            startDate: "Nov 17, 2026",
-        },
-        {
-            id: 3,
-            name: "Industrial Power Generator",
-            category: "Electronics",
-            image: "/images/equipment/generator.jpg",
-            price: 1800,
-            status: "Completed",
-            startDate: "Nov 10, 2026",
         },
     ];
 
@@ -148,46 +194,66 @@ export default function OwnerDashboard() {
                 </div>
 
                 <div className="space-y-4">
-                    {recentRentals.map((rental) => (
-                        <div
-                            key={rental.id}
-                            className="flex flex-col gap-4 rounded-lg border border-gray-100 p-4 sm:flex-row sm:items-center"
-                        >
-                            <img
-                                src={rental.image}
-                                alt={rental.name}
-                                className="h-16 w-16 rounded-lg object-cover"
-                            />
+                    {rentals.length === 0 ? (
+                        <p className="py-8 text-center text-sm text-gray-500">
+                            No rental activities yet.
+                        </p>
+                    ) : (
+                        rentals.slice(0, 3).map((rental) => (
+                            <div
+                                key={rental._id}
+                                className="flex flex-col gap-4 rounded-lg border border-gray-100 p-4 sm:flex-row sm:items-center"
+                            >
+                                <img
+                                    src={
+                                        rental.equipment?.image ||
+                                        "/images/equipment/default.jpg"
+                                    }
+                                    alt={rental.equipment?.name || "Equipment"}
+                                    className="h-16 w-16 rounded-lg object-cover"
+                                />
 
-                            <div className="flex-1">
-                                <h3 className="font-semibold text-[#142B45]">
-                                    {rental.name}
-                                </h3>
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-[#142B45]">
+                                        {rental.equipment?.name}
+                                    </h3>
 
-                                <p className="mt-1 text-sm text-gray-500">
-                                    {rental.category} · {rental.startDate}
-                                </p>
+                                    <p className="mt-1 text-sm text-gray-500">
+                                        {rental.equipment?.category} ·{" "}
+                                        {new Date(
+                                            rental.startDate
+                                        ).toLocaleDateString("en-BD")}
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end">
+                                    <p className="font-semibold text-[#142B45]">
+                                        ৳
+                                        {rental.equipment?.price?.toLocaleString(
+                                            "en-BD"
+                                        )}{" "}
+                                        / day
+                                    </p>
+
+                                    <span
+                                        className={`rounded-full px-3 py-1 text-xs font-medium ${
+                                            rental.status === "confirmed" ||
+                                            rental.status === "active"
+                                                ? "bg-green-50 text-green-700"
+                                                : rental.status === "pending"
+                                                    ? "bg-yellow-50 text-yellow-700"
+                                                    : "bg-gray-100 text-gray-600"
+                                        }`}
+                                    >
+                                        {rental.status
+                                            ?.charAt(0)
+                                            .toUpperCase() +
+                                            rental.status?.slice(1)}
+                                    </span>
+                                </div>
                             </div>
-
-                            <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end">
-                                <p className="font-semibold text-[#142B45]">
-                                    ৳{rental.price.toLocaleString("en-BD")} / day
-                                </p>
-
-                                <span
-                                    className={`rounded-full px-3 py-1 text-xs font-medium ${
-                                        rental.status === "Active"
-                                            ? "bg-green-50 text-green-700"
-                                            : rental.status === "Pending"
-                                                ? "bg-yellow-50 text-yellow-700"
-                                                : "bg-gray-100 text-gray-600"
-                                    }`}
-                                >
-                                    {rental.status}
-                                </span>
-                            </div>
-                        </div>
-                    ))}
+                        ))
+                    )}
                 </div>
             </div>
 
