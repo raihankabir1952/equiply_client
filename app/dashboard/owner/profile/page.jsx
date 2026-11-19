@@ -5,14 +5,16 @@ import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { Camera, UserRound, Mail, Save } from "lucide-react";
+import { toast } from "sonner";
 
 export default function OwnerProfilePage() {
     const router = useRouter();
-    const { data: session, isPending } = useSession();
+    const { data: session, isPending, refetch } = useSession();
 
     const [name, setName] = useState("");
     const [photo, setPhoto] = useState(null);
     const [preview, setPreview] = useState("");
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         if (!isPending && !session) {
@@ -33,6 +35,7 @@ export default function OwnerProfilePage() {
         return <p>Loading...</p>;
     }
 
+    // Handle Photo Selection
     const handlePhotoChange = (e) => {
         const file = e.target.files?.[0];
 
@@ -42,9 +45,81 @@ export default function OwnerProfilePage() {
         }
     };
 
-    const handleSubmit = (e) => {
+    // Update Profile
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Profile update functionality will be added later.
+
+        if (!name.trim()) {
+            toast.error("Name cannot be empty!");
+            return;
+        }
+
+        setSaving(true);
+
+        try {
+            let imageUrl = session.user.image || "";
+
+            // Upload Image to ImgBB
+            if (photo) {
+                const formData = new FormData();
+                formData.append("image", photo);
+
+                const uploadRes = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL}/upload/image`,
+                    {
+                        method: "POST",
+                        credentials: "include",
+                        body: formData,
+                    }
+                );
+
+                const uploadData = await uploadRes.json();
+
+                if (!uploadRes.ok) {
+                    throw new Error(
+                        uploadData.message || "Image upload failed!"
+                    );
+                }
+
+                imageUrl = uploadData.imageUrl;
+            }
+
+            // Update User Profile
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/users/me`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    credentials: "include",
+                    body: JSON.stringify({
+                        name: name.trim(),
+                        ...(photo && { image: imageUrl }),
+                    }),
+                }
+            );
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(
+                    data.message || "Failed to update profile!"
+                );
+            }
+
+            await refetch();
+
+            setPhoto(null);
+            setPreview(imageUrl);
+
+            toast.success("Profile updated successfully!");
+        } catch (error) {
+            console.error("Update owner profile error:", error);
+            toast.error(error.message || "Failed to update profile!");
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
@@ -74,7 +149,7 @@ export default function OwnerProfilePage() {
                             />
                         ) : (
                             <div className="flex h-28 w-28 items-center justify-center rounded-full bg-[#142B45] text-3xl font-bold text-white">
-                                {session.user.name?.charAt(0).toUpperCase()}
+                                {name?.charAt(0).toUpperCase()}
                             </div>
                         )}
 
@@ -97,6 +172,7 @@ export default function OwnerProfilePage() {
                     <h2 className="mt-4 text-lg font-bold text-[#142B45]">
                         {session.user.name}
                     </h2>
+
                     <p className="mt-1 text-sm text-gray-500">
                         Equipment Owner
                     </p>
@@ -148,10 +224,11 @@ export default function OwnerProfilePage() {
                     <div className="flex justify-end border-t border-gray-100 pt-6">
                         <button
                             type="submit"
-                            className="inline-flex items-center gap-2 rounded-lg bg-[#35C77A] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#2db36b]"
+                            disabled={saving}
+                            className="inline-flex items-center gap-2 rounded-lg bg-[#35C77A] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#2db36b] disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             <Save size={17} />
-                            Save Changes
+                            {saving ? "Saving..." : "Save Changes"}
                         </button>
                     </div>
 
