@@ -1,14 +1,31 @@
 
 "use client";
-import { Upload, Package, PlusCircle } from "lucide-react";
-import { useEffect } from "react";
+
+import { Upload } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function AddEquipmentPage() {
     const router = useRouter();
     const { data: session, isPending } = useSession();
 
+    const [formData, setFormData] = useState({
+        name: "",
+        description: "",
+        price: "",
+        category: "",
+        rentalType: "",
+        location: "",
+        availableQuantity: "",
+        termsAndConditions: "",
+    });
+
+    const [image, setImage] = useState(null);
+    const [loading, setLoading] = useState(false);
+
+    // Authentication Check
     useEffect(() => {
         if (!isPending && !session) {
             router.replace("/login");
@@ -19,10 +36,99 @@ export default function AddEquipmentPage() {
         }
     }, [session, isPending, router]);
 
+    // Handle Input Change
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+
+        setFormData((prev) => ({
+            ...prev,
+            [name]: value,
+        }));
+    };
+
+    // Handle Equipment Submission
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        if (!image) {
+            return toast.error("Please upload an equipment image!");
+        }
+
+        setLoading(true);
+
+        try {
+            // Step 1: Upload Image to ImgBB
+            const imageData = new FormData();
+            imageData.append("image", image);
+
+            const uploadRes = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/upload/image`,
+                {
+                    method: "POST",
+                    credentials: "include",
+                    body: imageData,
+                }
+            );
+
+            const uploadResult = await uploadRes.json();
+
+            if (!uploadRes.ok) {
+                throw new Error(uploadResult.message || "Image upload failed!");
+            }
+
+            // Step 2: Create Equipment
+            const equipmentData = {
+                ...formData,
+                image: uploadResult.imageUrl,
+                price: Number(formData.price),
+                availableQuantity: Number(formData.availableQuantity),
+            };
+
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/equipment`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    credentials: "include",
+                    body: JSON.stringify(equipmentData),
+                }
+            );
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.message || "Failed to add equipment!");
+            }
+
+            toast.success("Equipment added successfully!");
+
+            setFormData({
+                name: "",
+                description: "",
+                price: "",
+                category: "",
+                rentalType: "",
+                location: "",
+                availableQuantity: "",
+                termsAndConditions: "",
+            });
+
+            setImage(null);
+
+            router.push("/dashboard/owner/equipment");
+        } catch (error) {
+            console.error("Add equipment error:", error);
+            toast.error(error.message || "Something went wrong!");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     if (isPending || !session) {
         return <p>Loading...</p>;
     }
-
 
     return (
         <div className="space-y-6">
@@ -37,10 +143,7 @@ export default function AddEquipmentPage() {
                 </p>
             </div>
 
-            <form
-                onSubmit={(e) => e.preventDefault()}
-                className="space-y-6"
-            >
+            <form onSubmit={handleSubmit} className="space-y-6">
 
                 {/* Basic Information */}
                 <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
@@ -60,7 +163,11 @@ export default function AddEquipmentPage() {
                             </label>
                             <input
                                 type="text"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleChange}
                                 placeholder="Enter equipment name"
+                                required
                                 className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#35C77A]"
                             />
                         </div>
@@ -71,7 +178,10 @@ export default function AddEquipmentPage() {
                                 Category
                             </label>
                             <select
-                                defaultValue=""
+                                name="category"
+                                value={formData.category}
+                                onChange={handleChange}
+                                required
                                 className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#35C77A]"
                             >
                                 <option value="" disabled>Select category</option>
@@ -91,7 +201,11 @@ export default function AddEquipmentPage() {
                             </label>
                             <input
                                 type="text"
+                                name="location"
+                                value={formData.location}
+                                onChange={handleChange}
                                 placeholder="Enter equipment location"
+                                required
                                 className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#35C77A]"
                             />
                         </div>
@@ -102,8 +216,12 @@ export default function AddEquipmentPage() {
                                 Description
                             </label>
                             <textarea
+                                name="description"
+                                value={formData.description}
+                                onChange={handleChange}
                                 rows={4}
                                 placeholder="Describe your equipment..."
+                                required
                                 className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#35C77A]"
                             />
                         </div>
@@ -122,6 +240,7 @@ export default function AddEquipmentPage() {
                                 <p className="mt-4 text-sm font-semibold text-[#142B45]">
                                     Upload equipment image
                                 </p>
+
                                 <p className="mt-1 text-xs text-gray-500">
                                     PNG, JPG or WEBP (Max 5MB)
                                 </p>
@@ -129,8 +248,16 @@ export default function AddEquipmentPage() {
                                 <input
                                     type="file"
                                     accept="image/png,image/jpeg,image/webp"
+                                    required
+                                    onChange={(e) => setImage(e.target.files[0])}
                                     className="mt-4 block w-full text-sm text-gray-500 file:mr-4 file:rounded-lg file:border-0 file:bg-[#142B45] file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-[#1d3d5e]"
                                 />
+
+                                {image && (
+                                    <p className="mt-3 text-sm text-green-600">
+                                        Selected: {image.name}
+                                    </p>
+                                )}
                             </div>
                         </div>
 
@@ -155,8 +282,12 @@ export default function AddEquipmentPage() {
                             </label>
                             <input
                                 type="number"
+                                name="price"
+                                value={formData.price}
+                                onChange={handleChange}
                                 min="1"
                                 placeholder="Enter rental price"
+                                required
                                 className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#35C77A]"
                             />
                         </div>
@@ -167,7 +298,10 @@ export default function AddEquipmentPage() {
                                 Rental Type
                             </label>
                             <select
-                                defaultValue=""
+                                name="rentalType"
+                                value={formData.rentalType}
+                                onChange={handleChange}
+                                required
                                 className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#35C77A]"
                             >
                                 <option value="" disabled>Select rental type</option>
@@ -184,8 +318,12 @@ export default function AddEquipmentPage() {
                             </label>
                             <input
                                 type="number"
+                                name="availableQuantity"
+                                value={formData.availableQuantity}
+                                onChange={handleChange}
                                 min="1"
                                 placeholder="Enter available quantity"
+                                required
                                 className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#35C77A]"
                             />
                         </div>
@@ -259,8 +397,12 @@ export default function AddEquipmentPage() {
 
                     <div className="mt-6">
                         <textarea
+                            name="termsAndConditions"
+                            value={formData.termsAndConditions}
+                            onChange={handleChange}
                             rows={5}
                             placeholder="Write rental terms and conditions..."
+                            required
                             className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#35C77A]"
                         />
                     </div>
@@ -323,21 +465,22 @@ export default function AddEquipmentPage() {
                     <button
                         type="button"
                         onClick={() => router.back()}
-                        className="rounded-lg border border-gray-200 px-6 py-3 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+                        disabled={loading}
+                        className="rounded-lg border border-gray-200 px-6 py-3 text-sm font-medium text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
                     >
                         Cancel
                     </button>
 
                     <button
                         type="submit"
-                        className="rounded-lg bg-[#35C77A] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#2db36b]"
+                        disabled={loading}
+                        className="rounded-lg bg-[#35C77A] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#2db36b] disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                        Add Equipment
+                        {loading ? "Adding Equipment..." : "Add Equipment"}
                     </button>
                 </div>
 
             </form>
         </div>
     );
-
 }
