@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useSession } from "@/lib/auth-client";
@@ -6,11 +5,14 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function MyRentalsPage() {
-    const [activeFilter, setActiveFilter] = useState("All")
+    const [activeFilter, setActiveFilter] = useState("All");
+    const [bookings, setBookings] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     const router = useRouter();
     const { data: session, isPending } = useSession();
 
+    // Authentication check
     useEffect(() => {
         if (!isPending && !session) {
             router.replace("/login");
@@ -21,71 +23,98 @@ export default function MyRentalsPage() {
         }
     }, [session, isPending, router]);
 
+    // Fetch customer rentals
+    useEffect(() => {
+        if (isPending || !session || session.user.role !== "customer") {
+            return;
+        }
+
+        const fetchRentals = async () => {
+            try {
+                const res = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL}/rentals`,
+                    {
+                        credentials: "include",
+                    }
+                );
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    setBookings(data.rentals || []);
+                } else {
+                    console.error("Failed to fetch rentals:", data.message);
+                }
+            } catch (error) {
+                console.error("Failed to fetch rentals:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchRentals();
+    }, [session, isPending]);
+
     if (isPending || !session) {
         return <p>Loading...</p>;
     }
 
-    const bookings = [
-        {
-            id: 1,
-            equipmentName: "Heavy Duty Excavator",
-            category: "Construction",
-            image: "/images/equipment/excavator.jpg",
-            bookingDate: "Nov 15, 2026",
-            startDate: "Nov 20, 2026",
-            endDate: "Nov 23, 2026",
-            duration: 3,
-            totalPrice: 25500,
-            status: "Active",
-        },
-        {
-            id: 2,
-            equipmentName: "Professional DSLR Camera",
-            category: "Photography",
-            image: "/images/equipment/camera.jpg",
-            bookingDate: "Nov 16, 2026",
-            startDate: "Nov 22, 2026",
-            endDate: "Nov 24, 2026",
-            duration: 2,
-            totalPrice: 5000,
-            status: "Pending",
-        },
-        {
-            id: 3,
-            equipmentName: "Industrial Power Generator",
-            category: "Electronics",
-            image: "/images/equipment/generator.jpg",
-            bookingDate: "Nov 05, 2026",
-            startDate: "Nov 08, 2026",
-            endDate: "Nov 10, 2026",
-            duration: 2,
-            totalPrice: 3600,
-            status: "Completed",
-        },
-        {
-            id: 4,
-            equipmentName: "Agricultural Tractor",
-            category: "Agriculture",
-            image: "/images/equipment/tractor.jpg",
-            bookingDate: "Nov 10, 2026",
-            startDate: "Nov 25, 2026",
-            endDate: "Nov 27, 2026",
-            duration: 2,
-            totalPrice: 10000,
-            status: "Cancelled",
-        },
+    // Filters
+    const filters = [
+        "All",
+        "Pending",
+        "Confirmed",
+        "Active",
+        "Completed",
+        "Cancelled",
     ];
 
-    const filters = ["All", "Active", "Pending", "Completed", "Cancelled"];
+    // Format backend data for UI
+    const formattedBookings = bookings.map((rental) => ({
+        id: rental._id,
+        equipmentName: rental.equipment?.name || "Equipment",
+        category: rental.equipment?.category || "General",
+        image: rental.equipment?.image,
+        startDate: new Date(rental.startDate).toLocaleDateString("en-BD", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+        }),
+        endDate: new Date(rental.endDate).toLocaleDateString("en-BD", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+        }),
+        duration: rental.rentalDays || 0,
+        totalPrice: Number(rental.totalAmount || 0),
+        status: rental.status?.toLowerCase() || "pending",
+        paymentStatus: rental.paymentStatus || "unpaid",
+    }));
 
+    // Filter bookings
     const filteredBookings =
         activeFilter === "All"
-            ? bookings
-            : bookings.filter(
-                (booking) => booking.status === activeFilter
+            ? formattedBookings
+            : formattedBookings.filter(
+                (booking) => booking.status === activeFilter.toLowerCase()
             );
 
-
+    // Status styles
+    const getStatusStyle = (status) => {
+        switch (status) {
+            case "confirmed":
+            case "active":
+                return "bg-green-50 text-green-700";
+            case "pending":
+                return "bg-yellow-50 text-yellow-700";
+            case "completed":
+                return "bg-blue-50 text-blue-700";
+            case "cancelled":
+                return "bg-red-50 text-red-700";
+            default:
+                return "bg-gray-100 text-gray-600";
+        }
+    };
 
     return (
         <div className="space-y-6">
@@ -106,10 +135,11 @@ export default function MyRentalsPage() {
                     <button
                         key={filter}
                         onClick={() => setActiveFilter(filter)}
-                        className={`rounded-lg px-5 py-2.5 text-sm font-medium transition-colors ${activeFilter === filter
+                        className={`rounded-lg px-5 py-2.5 text-sm font-medium transition-colors ${
+                            activeFilter === filter
                                 ? "bg-[#142B45] text-white"
                                 : "border border-gray-200 bg-white text-gray-600 hover:border-[#35C77A] hover:text-[#35C77A]"
-                            }`}
+                        }`}
                     >
                         {filter}
                     </button>
@@ -118,11 +148,18 @@ export default function MyRentalsPage() {
 
             {/* Booking Count */}
             <p className="text-sm text-gray-500">
-                Showing {filteredBookings.length} of {bookings.length} bookings
+                Showing {filteredBookings.length} of {formattedBookings.length} bookings
             </p>
 
-            {/* Booking List */}
-            {filteredBookings.length > 0 ? (
+            {/* Loading State */}
+            {loading ? (
+                <div className="rounded-xl border border-gray-100 bg-white py-12 text-center">
+                    <p className="text-sm text-gray-500">
+                        Loading your rentals...
+                    </p>
+                </div>
+            ) : filteredBookings.length > 0 ? (
+                /* Booking List */
                 <div className="space-y-4">
                     {filteredBookings.map((booking) => (
                         <div
@@ -131,11 +168,17 @@ export default function MyRentalsPage() {
                         >
                             <div className="flex flex-col gap-5 sm:flex-row">
                                 {/* Equipment Image */}
-                                <img
-                                    src={booking.image}
-                                    alt={booking.equipmentName}
-                                    className="h-32 w-full rounded-lg object-cover sm:w-40"
-                                />
+                                {booking.image ? (
+                                    <img
+                                        src={booking.image}
+                                        alt={booking.equipmentName}
+                                        className="h-32 w-full rounded-lg object-cover sm:w-40"
+                                    />
+                                ) : (
+                                    <div className="flex h-32 w-full items-center justify-center rounded-lg bg-gray-100 text-sm text-gray-400 sm:w-40">
+                                        No Image
+                                    </div>
+                                )}
 
                                 {/* Booking Information */}
                                 <div className="flex flex-1 flex-col justify-between gap-4">
@@ -151,16 +194,12 @@ export default function MyRentalsPage() {
                                         </div>
 
                                         <span
-                                            className={`rounded-full px-3 py-1 text-xs font-medium ${booking.status === "Active"
-                                                    ? "bg-green-50 text-green-700"
-                                                    : booking.status === "Pending"
-                                                        ? "bg-yellow-50 text-yellow-700"
-                                                        : booking.status === "Completed"
-                                                            ? "bg-blue-50 text-blue-700"
-                                                            : "bg-red-50 text-red-700"
-                                                }`}
+                                            className={`rounded-full px-3 py-1 text-xs font-medium ${getStatusStyle(
+                                                booking.status
+                                            )}`}
                                         >
-                                            {booking.status}
+                                            {booking.status.charAt(0).toUpperCase() +
+                                                booking.status.slice(1)}
                                         </span>
                                     </div>
 
@@ -203,9 +242,19 @@ export default function MyRentalsPage() {
                                             <p className="mt-1 text-lg font-bold text-[#142B45]">
                                                 ৳{booking.totalPrice.toLocaleString("en-BD")}
                                             </p>
+                                            <p className="mt-1 text-xs text-gray-500">
+                                                Payment: {booking.paymentStatus}
+                                            </p>
                                         </div>
 
-                                        <button className="rounded-lg border border-[#142B45] px-4 py-2 text-sm font-medium text-[#142B45] transition hover:bg-[#142B45] hover:text-white">
+                                        <button
+                                            onClick={() =>
+                                                router.push(
+                                                    `/dashboard/customer/rentals/${booking.id}`
+                                                )
+                                            }
+                                            className="rounded-lg border border-[#142B45] px-4 py-2 text-sm font-medium text-[#142B45] transition hover:bg-[#142B45] hover:text-white"
+                                        >
                                             View Details
                                         </button>
                                     </div>
@@ -224,10 +273,15 @@ export default function MyRentalsPage() {
                     <p className="mt-2 text-sm text-gray-500">
                         You don't have any {activeFilter.toLowerCase()} rentals yet.
                     </p>
+
+                    <button
+                        onClick={() => router.push("/equipment")}
+                        className="mt-4 rounded-lg bg-[#35C77A] px-5 py-2.5 text-sm font-semibold text-white hover:bg-green-600"
+                    >
+                        Explore Equipment
+                    </button>
                 </div>
             )}
         </div>
     );
-
-
 }
