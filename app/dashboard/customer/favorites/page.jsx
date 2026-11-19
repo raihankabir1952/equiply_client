@@ -70,11 +70,29 @@ export default function FavoritesPage() {
     }, [session, isPending]);
 
 
-    const handleRemoveFavorite = (id) => {
-        setFavoriteEquipment((prev) =>
-            prev.filter((item) => item.id !== id)
+    const handleRemoveFavorite = async (id) => {
+    try {
+        const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/favorites/${id}`,
+            {
+                method: "DELETE",
+                credentials: "include",
+            }
         );
-    };
+
+        const data = await res.json();
+
+        if (res.ok) {
+            setFavoriteEquipment((prev) =>
+                prev.filter((item) => item.id !== id)
+            );
+        } else {
+            console.error("Failed to remove favorite:", data.message);
+        }
+    } catch (error) {
+        console.error("Failed to remove favorite:", error);
+    }
+};
 
     if (isPending || !session) {
         return <p>Loading...</p>;
