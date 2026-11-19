@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useSession } from "@/lib/auth-client";
@@ -75,16 +76,33 @@ export default function MyRentalsPage() {
         equipmentName: rental.equipment?.name || "Equipment",
         category: rental.equipment?.category || "General",
         image: rental.equipment?.image,
+
         startDate: new Date(rental.startDate).toLocaleDateString("en-BD", {
             day: "numeric",
             month: "short",
             year: "numeric",
+            timeZone: "Asia/Dhaka",
         }),
+
         endDate: new Date(rental.endDate).toLocaleDateString("en-BD", {
             day: "numeric",
             month: "short",
             year: "numeric",
+            timeZone: "Asia/Dhaka",
         }),
+
+        paidAt: rental.paidAt
+            ? new Date(rental.paidAt).toLocaleString("en-BD", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                  timeZone: "Asia/Dhaka",
+              })
+            : null,
+
         duration: rental.rentalDays || 0,
         totalPrice: Number(rental.totalAmount || 0),
         status: rental.status?.toLowerCase() || "pending",
@@ -96,8 +114,8 @@ export default function MyRentalsPage() {
         activeFilter === "All"
             ? formattedBookings
             : formattedBookings.filter(
-                (booking) => booking.status === activeFilter.toLowerCase()
-            );
+                  (booking) => booking.status === activeFilter.toLowerCase()
+              );
 
     // Status styles
     const getStatusStyle = (status) => {
@@ -239,12 +257,23 @@ export default function MyRentalsPage() {
                                             <p className="text-xs text-gray-400">
                                                 Total Amount
                                             </p>
+
                                             <p className="mt-1 text-lg font-bold text-[#142B45]">
                                                 ৳{booking.totalPrice.toLocaleString("en-BD")}
                                             </p>
+
                                             <p className="mt-1 text-xs text-gray-500">
                                                 Payment: {booking.paymentStatus}
                                             </p>
+
+                                            {booking.paidAt && (
+                                                <p className="mt-1 text-xs text-gray-500">
+                                                    Payment Date & Time:{" "}
+                                                    <span className="font-medium text-gray-700">
+                                                        {booking.paidAt}
+                                                    </span>
+                                                </p>
+                                            )}
                                         </div>
 
                                         <button

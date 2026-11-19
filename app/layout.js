@@ -1,5 +1,6 @@
 
 import { Geist, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import { Toaster } from "sonner";
 import Navbar from "@/components/shared/Navbar";
@@ -28,9 +29,15 @@ export default function RootLayout({ children }) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <ConditionalLayout>
-          {children}
-        </ConditionalLayout>
+        <Suspense
+          fallback={
+            <div className="min-h-screen" />
+          }
+        >
+          <ConditionalLayout>
+            {children}
+          </ConditionalLayout>
+        </Suspense>
 
         <Toaster
           position="top-center"
