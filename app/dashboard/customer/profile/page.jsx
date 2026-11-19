@@ -1,13 +1,17 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 
 export default function CustomerProfilePage() {
     const router = useRouter();
-    const { data: session, isPending } = useSession();
+    const { data: session, isPending, refetch } = useSession();
+    const [name, setName] = useState("")
+    const [saving, setSaving] = useState(false)
+    const fileInputRef = useRef(null)
+    const [uploading, setUploading] = useState(false)
 
     useEffect(() => {
         if (!isPending && !session) {
@@ -18,6 +22,106 @@ export default function CustomerProfilePage() {
             router.replace("/");
         }
     }, [session, isPending, router]);
+
+    useEffect(() => {
+        if (session?.user) {
+            setName(session.user.name || "");
+        }
+    }, [session]);
+
+    const handleUpdateProfile = async () => {
+        if (!name.trim()) {
+            alert("Name cannot be empty!");
+            return;
+        }
+
+        try {
+            setSaving(true);
+
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/users/me`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    credentials: "include",
+                    body: JSON.stringify({
+                        name: name.trim(),
+                    }),
+                }
+            );
+
+            const data = await res.json();
+
+            if (res.ok) {
+                await refetch()
+                alert("Profile updated successfully!");
+            } else {
+                alert(data.message || "Failed to update profile!");
+            }
+        } catch (error) {
+            console.error("Profile update error:", error);
+            alert("Something went wrong!");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleImageUpload = async (file) => {
+        if (!file) return;
+
+        try {
+            setUploading(true);
+
+            const formData = new FormData();
+            formData.append("image", file);
+
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/upload/image`,
+                {
+                    method: "POST",
+                    credentials: "include",
+                    body: formData,
+                }
+            );
+
+            const data = await res.json();
+
+            if (res.ok) {
+                const updateRes = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL}/users/me`,
+                    {
+                        method: "PATCH",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        credentials: "include",
+                        body: JSON.stringify({
+                            image: data.imageUrl,
+                        }),
+                    }
+                );
+
+                const updateData = await updateRes.json();
+
+                if (updateRes.ok) {
+                    await refetch();
+                    alert("Profile photo updated successfully!");
+                } else {
+                    alert(updateData.message || "Failed to update profile photo!");
+                }
+            }
+            else {
+                alert(data.message || "Image upload failed!");
+            }
+        } catch (error) {
+            console.error("Image upload error:", error);
+            alert("Something went wrong!");
+        } finally {
+            setUploading(false);
+        }
+    };
 
     if (isPending || !session) {
         return <p>Loading...</p>;
@@ -66,10 +170,20 @@ export default function CustomerProfilePage() {
 
                         <button
                             type="button"
+                            onClick={() => fileInputRef.current.click()}
+                            disabled={uploading}
                             className="mt-3 rounded-lg border border-[#35C77A] px-4 py-2 text-sm font-semibold text-[#35C77A] transition hover:bg-green-50"
                         >
-                            Change Photo
+                            {uploading ? "Uploading..." : "Change Photo"}
                         </button>
+
+                        <input
+                            type="file"
+                            accept="image/*"
+                            ref={fileInputRef}
+                            hidden
+                            onChange={(e) => handleImageUpload(e.target.files[0])}
+                        />
                     </div>
                 </div>
 
@@ -100,16 +214,19 @@ export default function CustomerProfilePage() {
 
                     <input
                         type="text"
-                        defaultValue={session.user.name}
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
                         placeholder="Enter your full name"
                         className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-[#35C77A]"
                     />
 
                     <button
                         type="button"
-                        className="mt-5 rounded-lg bg-[#142B45] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#1d3d5e]"
+                        disabled={saving}
+                        onClick={handleUpdateProfile}
+                        className="mt-5 rounded-lg bg-[#142B45] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#1d3d5e] disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                        Save Changes
+                        {saving ? "Saving..." : "Save Changes"}
                     </button>
                 </div>
             </div>
