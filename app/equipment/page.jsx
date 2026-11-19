@@ -23,8 +23,46 @@ export default function EquipmentPage() {
     const [sort, setSort] = useState("newest");
 
     const [categories, setCategories] = useState([]);
+    const [urlInitialized, setUrlInitialized] = useState(false);
 
+    // Read filters from URL on page load
     useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+
+        setSearch(params.get("search") || "");
+        setCategory(params.get("category") || "");
+        setMinPrice(params.get("minPrice") || "");
+        setMaxPrice(params.get("maxPrice") || "");
+        setSort(params.get("sort") || "newest");
+
+        setUrlInitialized(true);
+    }, []);
+
+    // Update browser URL when filters change
+    useEffect(() => {
+        if (!urlInitialized) return;
+
+        const params = new URLSearchParams();
+
+        if (search.trim()) params.set("search", search.trim());
+        if (category) params.set("category", category);
+        if (minPrice !== "") params.set("minPrice", minPrice);
+        if (maxPrice !== "") params.set("maxPrice", maxPrice);
+        if (sort !== "newest") params.set("sort", sort);
+
+        const queryString = params.toString();
+
+        const newUrl = queryString
+            ? `/equipment?${queryString}`
+            : "/equipment";
+
+        window.history.replaceState(null, "", newUrl);
+    }, [search, category, minPrice, maxPrice, sort, urlInitialized]);
+
+    // Fetch equipment from backend
+    useEffect(() => {
+        if (!urlInitialized) return;
+
         const fetchEquipment = async () => {
             setLoading(true);
             setError("");
@@ -45,7 +83,9 @@ export default function EquipmentPage() {
                 const data = await res.json();
 
                 if (!res.ok) {
-                    throw new Error(data.message || "Failed to fetch equipment!");
+                    throw new Error(
+                        data.message || "Failed to fetch equipment!"
+                    );
                 }
 
                 setEquipment(data.equipments || []);
@@ -71,15 +111,16 @@ export default function EquipmentPage() {
         const timeout = setTimeout(fetchEquipment, 400);
 
         return () => clearTimeout(timeout);
-    }, [search, category, minPrice, maxPrice, sort]);
+    }, [search, category, minPrice, maxPrice, sort, urlInitialized]);
 
+    // Reset all filters
     const resetFilters = () => {
         setSearch("");
         setCategory("");
         setMinPrice("");
         setMaxPrice("");
         setSort("newest");
-    };
+    };;
 
     return (
         <main className="min-h-screen bg-slate-50 pb-20">
