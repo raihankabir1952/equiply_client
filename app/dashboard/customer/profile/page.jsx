@@ -4,6 +4,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+
 
 export default function CustomerProfilePage() {
     const router = useRouter();
@@ -31,7 +33,7 @@ export default function CustomerProfilePage() {
 
     const handleUpdateProfile = async () => {
         if (!name.trim()) {
-            alert("Name cannot be empty!");
+            toast.error("Name cannot be empty!");
             return;
         }
 
@@ -56,13 +58,13 @@ export default function CustomerProfilePage() {
 
             if (res.ok) {
                 await refetch()
-                alert("Profile updated successfully!");
+                toast.success("Profile updated successfully!")
             } else {
-                alert(data.message || "Failed to update profile!");
+                toast.error(data.message || "Failed to update profile!");
             }
         } catch (error) {
             console.error("Profile update error:", error);
-            alert("Something went wrong!");
+            toast.error("Something went wrong!")
         } finally {
             setSaving(false);
         }
@@ -107,17 +109,17 @@ export default function CustomerProfilePage() {
 
                 if (updateRes.ok) {
                     await refetch();
-                    alert("Profile photo updated successfully!");
+                    toast.success("Profile photo updated successfully!")
                 } else {
-                    alert(updateData.message || "Failed to update profile photo!");
+                    toast.error(updateData.message || "Failed to update profile photo!");
                 }
             }
             else {
-                alert(data.message || "Image upload failed!");
+                toast.error(data.message || "Image upload failed!");
             }
         } catch (error) {
             console.error("Image upload error:", error);
-            alert("Something went wrong!");
+            toast.error("Something went wrong!");
         } finally {
             setUploading(false);
         }
