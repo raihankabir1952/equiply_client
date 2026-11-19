@@ -32,8 +32,6 @@ export default function Navbar() {
     }
   };
 
-  // console.log("User Name", session?.user?.name);
-  // console.log("User Email", session?.user?.email);
   console.log("User role :", session?.user?.role);
   const dashboardLink = `/dashboard/${session?.user?.role}`;
 
