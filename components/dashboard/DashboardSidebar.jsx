@@ -13,7 +13,8 @@ import {
     PlusCircle,
     Package,
     ClipboardList,
-    UsersIcon
+    UsersIcon,
+    ChartNoAxesCombined,
 } from "lucide-react";
 
 import {
@@ -75,6 +76,7 @@ const ownerMenu = [
     },
 ];
 
+// Admin Menu
 const adminMenu = [
     {
         title: "All Users",
@@ -92,10 +94,16 @@ const adminMenu = [
         icon: ClipboardList,
     },
     {
+        title: "Analytics",
+        url: "/dashboard/admin/analytics",
+        icon: ChartNoAxesCombined,
+    },
+    {
         title: "My Profile",
         url: "/dashboard/admin/profile",
         icon: UserRound,
     },
+
 ];
 
 export default function DashboardSidebar() {
@@ -141,7 +149,11 @@ export default function DashboardSidebar() {
                                 <SidebarMenuItem key={item.title}>
                                     <SidebarMenuButton
                                         render={<Link href={item.url} />}
-                                        isActive={pathname === item.url}
+                                        isActive={
+                                            pathname === item.url ||
+                                            (item.url === "/dashboard/admin/analytics" &&
+                                                pathname.startsWith("/dashboard/admin/analytics/"))
+                                        }
                                     >
                                         <item.icon />
                                         <span>{item.title}</span>
