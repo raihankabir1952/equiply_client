@@ -4,14 +4,23 @@
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
-import { Camera, UserRound, Mail, Save, ShieldCheck } from "lucide-react";
+import {
+    Camera,
+    UserRound,
+    Mail,
+    Save,
+    ShieldCheck,
+} from "lucide-react";
+import { toast } from "sonner";
 
 export default function AdminProfilePage() {
     const router = useRouter();
-    const { data: session, isPending } = useSession();
+    const { data: session, isPending, refetch } = useSession();
 
     const [name, setName] = useState("");
     const [preview, setPreview] = useState("");
+    const [saving, setSaving] = useState(false);
+    const [uploading, setUploading] = useState(false);
 
     useEffect(() => {
         if (!isPending && !session) {
@@ -32,17 +41,117 @@ export default function AdminProfilePage() {
         return <p>Loading...</p>;
     }
 
-    const handlePhotoChange = (e) => {
+    // Profile Image Upload
+    const handlePhotoChange = async (e) => {
         const file = e.target.files?.[0];
 
-        if (file) {
-            setPreview(URL.createObjectURL(file));
+        if (!file) return;
+
+        if (!file.type.startsWith("image/")) {
+            toast.error("Please select a valid image!");
+            return;
+        }
+
+        const localPreview = URL.createObjectURL(file);
+        setPreview(localPreview);
+
+        try {
+            setUploading(true);
+
+            const formData = new FormData();
+            formData.append("image", file);
+
+            // Upload image to ImgBB
+            const uploadRes = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/upload/image`,
+                {
+                    method: "POST",
+                    credentials: "include",
+                    body: formData,
+                }
+            );
+
+            const uploadData = await uploadRes.json();
+
+            if (!uploadRes.ok) {
+                throw new Error(uploadData.message || "Image upload failed!");
+            }
+
+            // Update profile image in Better Auth
+            const updateRes = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/users/me`,
+                {
+                    method: "PATCH",
+                    credentials: "include",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        image: uploadData.imageUrl,
+                    }),
+                }
+            );
+
+            const updateData = await updateRes.json();
+
+            if (!updateRes.ok) {
+                throw new Error(updateData.message || "Profile image update failed!");
+            }
+
+            await refetch();
+
+            setPreview(uploadData.imageUrl);
+            toast.success("Profile photo updated successfully!");
+        } catch (error) {
+            setPreview(session.user.image || "");
+            toast.error(error.message || "Image upload failed!");
+        } finally {
+            URL.revokeObjectURL(localPreview);
+            setUploading(false);
+            e.target.value = "";
         }
     };
 
-    const handleSubmit = (e) => {
+    // Update Profile Name
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Profile update functionality will be added later.
+
+        if (!name.trim()) {
+            toast.error("Name cannot be empty!");
+            return;
+        }
+
+        try {
+            setSaving(true);
+
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/users/me`,
+                {
+                    method: "PATCH",
+                    credentials: "include",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        name: name.trim(),
+                    }),
+                }
+            );
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.message || "Profile update failed!");
+            }
+
+            await refetch();
+
+            toast.success("Profile updated successfully!");
+        } catch (error) {
+            toast.error(error.message || "Something went wrong!");
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
@@ -78,7 +187,11 @@ export default function AdminProfilePage() {
 
                         <label
                             htmlFor="admin-profile-photo"
-                            className="absolute bottom-0 right-0 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-2 border-white bg-[#35C77A] text-white transition hover:bg-[#2db36b]"
+                            className={`absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-[#35C77A] text-white transition hover:bg-[#2db36b] ${
+                                uploading
+                                    ? "cursor-not-allowed opacity-50"
+                                    : "cursor-pointer"
+                            }`}
                         >
                             <Camera size={17} />
                         </label>
@@ -88,6 +201,7 @@ export default function AdminProfilePage() {
                             type="file"
                             accept="image/png,image/jpeg,image/webp"
                             onChange={handlePhotoChange}
+                            disabled={uploading}
                             className="hidden"
                         />
                     </div>
@@ -104,6 +218,12 @@ export default function AdminProfilePage() {
                         <ShieldCheck size={14} />
                         Admin Account
                     </p>
+
+                    {uploading && (
+                        <p className="mt-3 text-xs text-gray-500">
+                            Uploading profile photo...
+                        </p>
+                    )}
                 </div>
 
                 {/* Profile Form */}
@@ -148,10 +268,11 @@ export default function AdminProfilePage() {
                     <div className="flex justify-end border-t border-gray-100 pt-6">
                         <button
                             type="submit"
-                            className="inline-flex items-center gap-2 rounded-lg bg-[#35C77A] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#2db36b]"
+                            disabled={saving || uploading}
+                            className="inline-flex items-center gap-2 rounded-lg bg-[#35C77A] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#2db36b] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             <Save size={17} />
-                            Save Changes
+                            {saving ? "Saving..." : "Save Changes"}
                         </button>
                     </div>
 
