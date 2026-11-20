@@ -3,21 +3,38 @@
 
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api";
+
 import {
     Users,
     Package,
     Clock,
     CalendarDays,
     CheckCircle,
-    XCircle,
+    DollarSign,
 } from "lucide-react";
+
+import {
+    ResponsiveContainer,
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+} from "recharts";
 
 export default function AdminDashboard() {
     const router = useRouter();
 
     const { data: session, isPending } = useSession();
 
+    const [analytics, setAnalytics] = useState(null);
+    const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(true);
+    const [error, setError] = useState("");
+
+    // Authentication Check
     useEffect(() => {
         if (!isPending && !session) {
             router.replace("/login");
@@ -28,6 +45,37 @@ export default function AdminDashboard() {
         }
     }, [session, isPending, router]);
 
+    // Fetch Admin Analytics
+    useEffect(() => {
+        if (isPending || !session || session.user.role !== "admin") {
+            return;
+        }
+
+        const fetchAnalytics = async () => {
+            try {
+                setIsAnalyticsLoading(true);
+                setError("");
+
+                const response = await apiFetch("/analytics/admin");
+
+                if (!response.ok) {
+                    throw new Error("Failed to load analytics data.");
+                }
+
+                const data = await response.json();
+
+                setAnalytics(data.analytics);
+            } catch (error) {
+                console.error("Analytics error:", error);
+                setError(error.message);
+            } finally {
+                setIsAnalyticsLoading(false);
+            }
+        };
+
+        fetchAnalytics();
+    }, [session, isPending]);
+
     if (isPending || !session) {
         return <p>Loading...</p>;
     }
@@ -35,52 +83,56 @@ export default function AdminDashboard() {
     const adminStats = [
         {
             title: "Total Users",
-            value: 25,
+            value: analytics?.totalUsers ?? 0,
             icon: Users,
+            color: "bg-blue-50 text-blue-600",
         },
         {
             title: "Total Equipment",
-            value: 18,
+            value: analytics?.totalEquipment ?? 0,
             icon: Package,
+            color: "bg-green-50 text-[#35C77A]",
         },
         {
             title: "Pending Approvals",
-            value: 4,
+            value: analytics?.pendingApprovals ?? 0,
             icon: Clock,
+            color: "bg-yellow-50 text-yellow-600",
         },
         {
-            title: "Total Rentals",
-            value: 32,
+            title: "Total Bookings",
+            value: analytics?.totalBookings ?? 0,
             icon: CalendarDays,
+            color: "bg-purple-50 text-purple-600",
+        },
+        {
+            title: "Completed Rentals",
+            value: analytics?.completedRentals ?? 0,
+            icon: CheckCircle,
+            color: "bg-emerald-50 text-emerald-600",
+        },
+        {
+            title: "Total Revenue",
+            value: `৳${(analytics?.totalRevenue ?? 0).toLocaleString("en-BD")}`,
+            icon: DollarSign,
+            color: "bg-orange-50 text-orange-600",
         },
     ];
 
-    const recentEquipment = [
-        {
-            id: 1,
-            name: "Heavy Duty Excavator",
-            category: "Construction",
-            owner: "John Smith",
-            price: 8500,
-            status: "Pending",
-        },
-        {
-            id: 2,
-            name: "Professional DSLR Camera",
-            category: "Photography",
-            owner: "Michael Brown",
-            price: 2500,
-            status: "Approved",
-        },
-        {
-            id: 3,
-            name: "Industrial Power Generator",
-            category: "Electronics",
-            owner: "David Wilson",
-            price: 1800,
-            status: "Rejected",
-        },
-    ];
+    // Format Monthly Booking Data
+    const monthlyBookings = (analytics?.monthlyBookings ?? []).map((item) => {
+        const [year, month] = item._id.split("-");
+
+        const date = new Date(Number(year), Number(month) - 1);
+
+        return {
+            month: date.toLocaleDateString("en-US", {
+                month: "short",
+                year: "2-digit",
+            }),
+            bookings: item.totalBookings,
+        };
+    });
 
     return (
         <div className="space-y-8">
@@ -96,8 +148,15 @@ export default function AdminDashboard() {
                 </p>
             </div>
 
+            {/* Analytics Error */}
+            {error && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+                    {error}
+                </div>
+            )}
+
             {/* Admin Statistics */}
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
                 {adminStats.map((stat) => {
                     const Icon = stat.icon;
 
@@ -111,17 +170,93 @@ export default function AdminDashboard() {
                                     {stat.title}
                                 </p>
 
-                                <div className="rounded-lg bg-green-50 p-3">
-                                    <Icon className="h-5 w-5 text-[#35C77A]" />
+                                <div className={`rounded-lg p-3 ${stat.color}`}>
+                                    <Icon className="h-5 w-5" />
                                 </div>
                             </div>
 
                             <h2 className="mt-4 text-3xl font-bold text-[#142B45]">
-                                {stat.value}
+                                {isAnalyticsLoading ? "..." : stat.value}
                             </h2>
                         </div>
                     );
                 })}
+            </div>
+
+            {/* Monthly Bookings Chart */}
+            <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                <div className="mb-6">
+                    <h2 className="text-lg font-bold text-[#142B45]">
+                        Monthly Bookings
+                    </h2>
+
+                    <p className="mt-1 text-sm text-gray-500">
+                        Booking activity over the last six months.
+                    </p>
+                </div>
+
+                {isAnalyticsLoading ? (
+                    <div className="flex h-72 items-center justify-center text-sm text-gray-500">
+                        Loading chart...
+                    </div>
+                ) : monthlyBookings.length > 0 ? (
+                    <div className="h-72 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart
+                                data={monthlyBookings}
+                                margin={{
+                                    top: 10,
+                                    right: 20,
+                                    left: 0,
+                                    bottom: 5,
+                                }}
+                            >
+                                <CartesianGrid
+                                    strokeDasharray="3 3"
+                                    vertical={false}
+                                />
+
+                                <XAxis
+                                    dataKey="month"
+                                    tick={{ fill: "#64748b", fontSize: 12 }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                />
+
+                                <YAxis
+                                    allowDecimals={false}
+                                    tick={{ fill: "#64748b", fontSize: 12 }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                />
+
+                                <Tooltip
+                                    contentStyle={{
+                                        borderRadius: "10px",
+                                        border: "1px solid #e5e7eb",
+                                    }}
+                                />
+
+                                <Line
+                                    type="monotone"
+                                    dataKey="bookings"
+                                    name="Bookings"
+                                    stroke="#35C77A"
+                                    strokeWidth={3}
+                                    dot={{
+                                        r: 5,
+                                        fill: "#35C77A",
+                                    }}
+                                    activeDot={{ r: 7 }}
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                ) : (
+                    <div className="flex h-72 items-center justify-center text-sm text-gray-500">
+                        No booking data available yet.
+                    </div>
+                )}
             </div>
 
             {/* Recent Equipment */}
@@ -137,45 +272,8 @@ export default function AdminDashboard() {
                     </p>
                 </div>
 
-                <div className="space-y-4">
-                    {recentEquipment.map((equipment) => (
-                        <div
-                            key={equipment.id}
-                            className="flex flex-col gap-4 rounded-lg border border-gray-100 p-4 sm:flex-row sm:items-center"
-                        >
-                            <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-green-50">
-                                <Package className="h-7 w-7 text-[#35C77A]" />
-                            </div>
-
-                            <div className="flex-1">
-                                <h3 className="font-semibold text-[#142B45]">
-                                    {equipment.name}
-                                </h3>
-
-                                <p className="mt-1 text-sm text-gray-500">
-                                    {equipment.category} · Owner: {equipment.owner}
-                                </p>
-                            </div>
-
-                            <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end">
-                                <p className="font-semibold text-[#142B45]">
-                                    ৳{equipment.price.toLocaleString("en-BD")} / day
-                                </p>
-
-                                <span
-                                    className={`rounded-full px-3 py-1 text-xs font-medium ${
-                                        equipment.status === "Approved"
-                                            ? "bg-green-50 text-green-700"
-                                            : equipment.status === "Pending"
-                                                ? "bg-yellow-50 text-yellow-700"
-                                                : "bg-red-50 text-red-700"
-                                    }`}
-                                >
-                                    {equipment.status}
-                                </span>
-                            </div>
-                        </div>
-                    ))}
+                <div className="rounded-lg border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500">
+                    Recent equipment list will be connected to the API.
                 </div>
             </div>
 
