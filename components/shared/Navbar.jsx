@@ -1,8 +1,10 @@
+
 "use client";
 
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useSession, signOut } from "@/lib/auth-client";
 import { Menu, X, ArrowRight, LogOut } from "lucide-react";
 
@@ -14,18 +16,23 @@ const navLinks = [
 ];
 
 export default function Navbar() {
+  const router = useRouter();
+
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const { data: session, isPending } = useSession();
 
-  //logout functionality
+  // Logout functionality
   const handleLogout = async () => {
     setIsLoggingOut(true);
 
     try {
       await signOut();
+
       setIsOpen(false);
+      router.replace("/login");
+      router.refresh();
     } catch (error) {
       console.error("Logout failed:", error);
     } finally {
@@ -34,6 +41,7 @@ export default function Navbar() {
   };
 
   console.log("User role :", session?.user?.role);
+
   const dashboardLink = `/dashboard/${session?.user?.role}`;
 
   return (
@@ -92,6 +100,7 @@ export default function Navbar() {
                 {session?.user?.role?.charAt(0).toUpperCase() +
                   session?.user?.role?.slice(1)} Dashboard
               </Link>
+
               <button
                 onClick={handleLogout}
                 disabled={isLoggingOut}
@@ -151,6 +160,7 @@ export default function Navbar() {
               </Link>
             ))}
           </div>
+
           <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4">
             {isPending ? (
               <p className="py-2 text-sm text-slate-500">Loading...</p>
@@ -183,6 +193,7 @@ export default function Navbar() {
                   {session?.user?.role?.charAt(0).toUpperCase() +
                     session?.user?.role?.slice(1)} Dashboard
                 </Link>
+
                 <button
                   onClick={handleLogout}
                   disabled={isLoggingOut}
@@ -201,11 +212,17 @@ export default function Navbar() {
               </div>
             ) : (
               <>
-                <Link href="/login" className="rounded-lg px-4 py-2 text-center font-semibold text-[#142B45]">
+                <Link
+                  href="/login"
+                  className="rounded-lg px-4 py-2 text-center font-semibold text-[#142B45]"
+                >
                   Login
                 </Link>
 
-                <Link href="/register" className="rounded-lg bg-[#35C77A] px-4 py-3 text-center font-semibold text-[#142B45]">
+                <Link
+                  href="/register"
+                  className="rounded-lg bg-[#35C77A] px-4 py-3 text-center font-semibold text-[#142B45]"
+                >
                   Get Started
                 </Link>
               </>
