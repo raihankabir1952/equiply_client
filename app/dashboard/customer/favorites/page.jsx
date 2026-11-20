@@ -5,16 +5,16 @@ import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
-
+import { apiFetch } from "@/lib/api";
 
 export default function FavoritesPage() {
     const router = useRouter();
     const { data: session, isPending } = useSession();
-    // console.log("Favorites Data:", data.favorites);
 
-    const [favoriteEquipment, setFavoriteEquipment] = useState([])
-    const [loading, setLoading] = useState(true)
+    const [favoriteEquipment, setFavoriteEquipment] = useState([]);
+    const [loading, setLoading] = useState(true);
 
+    // Authentication check
     useEffect(() => {
         if (!isPending && !session) {
             router.replace("/login");
@@ -25,7 +25,7 @@ export default function FavoritesPage() {
         }
     }, [session, isPending, router]);
 
-    //Authentication check
+    // Fetch customer favorites
     useEffect(() => {
         if (isPending || !session || session.user.role !== "customer") {
             return;
@@ -33,12 +33,7 @@ export default function FavoritesPage() {
 
         const fetchFavorites = async () => {
             try {
-                const res = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/favorites`,
-                    {
-                        credentials: "include",
-                    }
-                );
+                const res = await apiFetch("/favorites");
 
                 const data = await res.json();
                 console.log(data.favorites);
@@ -69,30 +64,26 @@ export default function FavoritesPage() {
         fetchFavorites();
     }, [session, isPending]);
 
-
+    // Remove favorite
     const handleRemoveFavorite = async (id) => {
-    try {
-        const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/favorites/${id}`,
-            {
+        try {
+            const res = await apiFetch(`/favorites/${id}`, {
                 method: "DELETE",
-                credentials: "include",
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                setFavoriteEquipment((prev) =>
+                    prev.filter((item) => item.id !== id)
+                );
+            } else {
+                console.error("Failed to remove favorite:", data.message);
             }
-        );
-
-        const data = await res.json();
-
-        if (res.ok) {
-            setFavoriteEquipment((prev) =>
-                prev.filter((item) => item.id !== id)
-            );
-        } else {
-            console.error("Failed to remove favorite:", data.message);
+        } catch (error) {
+            console.error("Failed to remove favorite:", error);
         }
-    } catch (error) {
-        console.error("Failed to remove favorite:", error);
-    }
-};
+    };
 
     if (isPending || !session) {
         return <p>Loading...</p>;
