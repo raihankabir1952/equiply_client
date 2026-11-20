@@ -9,7 +9,10 @@ import {
     ArrowRight,
     SlidersHorizontal,
     ArrowUpRight,
+    Heart,
 } from "lucide-react";
+import { toast } from "sonner";
+import { apiFetch } from "@/lib/api";
 
 export default function EquipmentPage() {
     const [equipment, setEquipment] = useState([]);
@@ -25,6 +28,10 @@ export default function EquipmentPage() {
     const [categories, setCategories] = useState([]);
     const [urlInitialized, setUrlInitialized] = useState(false);
 
+    // Favorite states
+    const [favoriteIds, setFavoriteIds] = useState([]);
+    const [favoriteLoading, setFavoriteLoading] = useState([]);
+
     // Read filters from URL on page load
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -36,6 +43,30 @@ export default function EquipmentPage() {
         setSort(params.get("sort") || "newest");
 
         setUrlInitialized(true);
+    }, []);
+
+    // Fetch customer's favorites
+    useEffect(() => {
+        const fetchFavorites = async () => {
+            try {
+                const res = await apiFetch("/favorites");
+                const data = await res.json();
+
+                if (!res.ok) return;
+
+                const favorites = data.favorites || [];
+
+                setFavoriteIds(
+                    favorites.map((item) =>
+                        String(item.equipmentId?._id || item.equipmentId)
+                    )
+                );
+            } catch (error) {
+                // User may not be logged in
+            }
+        };
+
+        fetchFavorites();
     }, []);
 
     // Update browser URL when filters change
@@ -113,6 +144,60 @@ export default function EquipmentPage() {
         return () => clearTimeout(timeout);
     }, [search, category, minPrice, maxPrice, sort, urlInitialized]);
 
+    // Add or remove favorite
+    const toggleFavorite = async (equipmentId) => {
+        if (favoriteLoading.includes(equipmentId)) return;
+
+        setFavoriteLoading((previous) => [...previous, equipmentId]);
+
+        try {
+            const isFavorite = favoriteIds.includes(equipmentId);
+
+            const res = isFavorite
+                ? await apiFetch(`/favorites/${equipmentId}`, {
+                      method: "DELETE",
+                  })
+                : await apiFetch("/favorites", {
+                      method: "POST",
+                      headers: {
+                          "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                          equipmentId,
+                      }),
+                  });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(
+                    data.message || "Failed to update favorite!"
+                );
+            }
+
+            if (isFavorite) {
+                setFavoriteIds((previous) =>
+                    previous.filter((id) => id !== equipmentId)
+                );
+
+                toast.success("Removed from favorites!");
+            } else {
+                setFavoriteIds((previous) => [
+                    ...previous,
+                    equipmentId,
+                ]);
+
+                toast.success("Added to favorites!");
+            }
+        } catch (error) {
+            toast.error(error.message || "Something went wrong!");
+        } finally {
+            setFavoriteLoading((previous) =>
+                previous.filter((id) => id !== equipmentId)
+            );
+        }
+    };
+
     // Reset all filters
     const resetFilters = () => {
         setSearch("");
@@ -120,7 +205,7 @@ export default function EquipmentPage() {
         setMinPrice("");
         setMaxPrice("");
         setSort("newest");
-    };;
+    };
 
     return (
         <main className="min-h-screen bg-slate-50 pb-20">
@@ -285,83 +370,120 @@ export default function EquipmentPage() {
                     ) : (
                         <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
 
-                            {equipment.map((item) => (
-                                <div
-                                    key={item._id}
-                                    className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-2 hover:border-[#35C77A]/50 hover:shadow-xl hover:shadow-[#142B45]/10"
-                                >
-                                    {/* Image */}
-                                    <div className="relative h-56 overflow-hidden bg-slate-100">
+                            {equipment.map((item) => {
+                                const isFavorite = favoriteIds.includes(
+                                    String(item._id)
+                                );
 
-                                        <img
-                                            src={item.image}
-                                            alt={item.name}
-                                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                        />
+                                return (
+                                    <div
+                                        key={item._id}
+                                        className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-2 hover:border-[#35C77A]/50 hover:shadow-xl hover:shadow-[#142B45]/10"
+                                    >
+                                        {/* Image */}
+                                        <div className="relative h-56 overflow-hidden bg-slate-100">
 
-                                        <span className="absolute left-4 top-4 rounded-full border border-white/70 bg-white/95 px-3 py-1.5 text-xs font-bold text-[#142B45] shadow-sm">
-                                            {item.category}
-                                        </span>
-
-                                        <span className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-[#35C77A] px-3 py-1.5 text-xs font-bold text-[#142B45] shadow-sm">
-                                            <span className="h-1.5 w-1.5 rounded-full bg-[#142B45]" />
-                                            {item.availableQuantity > 0
-                                                ? "Available"
-                                                : "Unavailable"}
-                                        </span>
-
-                                        <Link
-                                            href={`/equipment/${item._id}`}
-                                            aria-label={`View ${item.name}`}
-                                            className="absolute bottom-4 right-4 flex h-10 w-10 translate-y-3 items-center justify-center rounded-full bg-white text-[#142B45] opacity-0 shadow-lg transition-all duration-300 hover:bg-[#35C77A] group-hover:translate-y-0 group-hover:opacity-100"
-                                        >
-                                            <ArrowUpRight size={20} />
-                                        </Link>
-                                    </div>
-
-                                    {/* Card Content */}
-                                    <div className="p-5">
-
-                                        <div className="flex items-center gap-1.5 text-sm text-slate-500">
-                                            <MapPin
-                                                size={15}
-                                                className="text-[#35C77A]"
+                                            <img
+                                                src={item.image}
+                                                alt={item.name}
+                                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                                             />
-                                            {item.location}
-                                        </div>
 
-                                        <h3 className="mt-3 line-clamp-1 text-xl font-bold text-[#142B45] transition-colors group-hover:text-[#229c5b]">
-                                            {item.name}
-                                        </h3>
+                                            <span className="absolute left-4 top-4 rounded-full border border-white/70 bg-white/95 px-3 py-1.5 text-xs font-bold text-[#142B45] shadow-sm">
+                                                {item.category}
+                                            </span>
 
-                                        <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
-                                            <div>
-                                                <p className="text-xs font-medium text-slate-400">
-                                                    Rental Price
-                                                </p>
+                                            <span className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-[#35C77A] px-3 py-1.5 text-xs font-bold text-[#142B45] shadow-sm">
+                                                <span className="h-1.5 w-1.5 rounded-full bg-[#142B45]" />
+                                                {item.availableQuantity > 0
+                                                    ? "Available"
+                                                    : "Unavailable"}
+                                            </span>
 
-                                                <div className="mt-1 flex items-baseline gap-1">
-                                                    <span className="text-2xl font-extrabold text-[#142B45]">
-                                                        ৳{Number(item.price).toLocaleString("en-BD")}
-                                                    </span>
-
-                                                    <span className="text-xs text-slate-500">
-                                                        / {item.rentalType}
-                                                    </span>
-                                                </div>
-                                            </div>
+                                            {/* Favorite Button */}
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    toggleFavorite(String(item._id))
+                                                }
+                                                disabled={favoriteLoading.includes(
+                                                    String(item._id)
+                                                )}
+                                                aria-label={
+                                                    isFavorite
+                                                        ? "Remove from favorites"
+                                                        : "Add to favorites"
+                                                }
+                                                className="absolute bottom-4 left-4 flex h-10 w-10 items-center justify-center rounded-full bg-white text-red-500 shadow-lg transition-all duration-300 hover:scale-110 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                            >
+                                                <Heart
+                                                    size={20}
+                                                    fill={
+                                                        isFavorite
+                                                            ? "currentColor"
+                                                            : "none"
+                                                    }
+                                                    className={
+                                                        isFavorite
+                                                            ? "text-red-500"
+                                                            : "text-slate-500"
+                                                    }
+                                                />
+                                            </button>
 
                                             <Link
                                                 href={`/equipment/${item._id}`}
-                                                className="inline-flex items-center gap-2 rounded-lg bg-[#142B45] px-4 py-3 text-sm font-semibold text-white transition-all duration-300 hover:bg-[#35C77A] hover:text-[#142B45]"
+                                                aria-label={`View ${item.name}`}
+                                                className="absolute bottom-4 right-4 flex h-10 w-10 translate-y-3 items-center justify-center rounded-full bg-white text-[#142B45] opacity-0 shadow-lg transition-all duration-300 hover:bg-[#35C77A] group-hover:translate-y-0 group-hover:opacity-100"
                                             >
-                                                Details
-                                                <ArrowRight size={15} />
+                                                <ArrowUpRight size={20} />
                                             </Link>
                                         </div>
+
+                                        {/* Card Content */}
+                                        <div className="p-5">
+
+                                            <div className="flex items-center gap-1.5 text-sm text-slate-500">
+                                                <MapPin
+                                                    size={15}
+                                                    className="text-[#35C77A]"
+                                                />
+                                                {item.location}
+                                            </div>
+
+                                            <h3 className="mt-3 line-clamp-1 text-xl font-bold text-[#142B45] transition-colors group-hover:text-[#229c5b]">
+                                                {item.name}
+                                            </h3>
+
+                                            <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
+                                                <div>
+                                                    <p className="text-xs font-medium text-slate-400">
+                                                        Rental Price
+                                                    </p>
+
+                                                    <div className="mt-1 flex items-baseline gap-1">
+                                                        <span className="text-2xl font-extrabold text-[#142B45]">
+                                                            ৳{Number(item.price).toLocaleString("en-BD")}
+                                                        </span>
+
+                                                        <span className="text-xs text-slate-500">
+                                                            / {item.rentalType}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <Link
+                                                    href={`/equipment/${item._id}`}
+                                                    className="inline-flex items-center gap-2 rounded-lg bg-[#142B45] px-4 py-3 text-sm font-semibold text-white transition-all duration-300 hover:bg-[#35C77A] hover:text-[#142B45]"
+                                                >
+                                                    Details
+                                                    <ArrowRight size={15} />
+                                                </Link>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
 
                         </div>
                     )}

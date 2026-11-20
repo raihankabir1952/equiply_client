@@ -66,7 +66,7 @@ export default function RegisterPage() {
         formData.append("image", photo);
 
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/upload/image`,
+          `${process.env.NEXT_PUBLIC_API_URL}/upload/image`,
           {
             method: "POST",
             body: formData,
@@ -82,8 +82,6 @@ export default function RegisterPage() {
 
         imageUrl = result.imageUrl;
       }
-
-
       const { data, error } = await signUp.email({
         name: name.trim(),
         email: email.trim(),

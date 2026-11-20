@@ -6,6 +6,7 @@ import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { toast } from "sonner";
 
 export default function FavoritesPage() {
     const router = useRouter();
@@ -77,6 +78,7 @@ export default function FavoritesPage() {
                 setFavoriteEquipment((prev) =>
                     prev.filter((item) => item.id !== id)
                 );
+                toast.success("Removed from favorites!")
             } else {
                 console.error("Failed to remove favorite:", data.message);
             }
