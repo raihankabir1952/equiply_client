@@ -82,14 +82,16 @@ function RentalDetailsContent() {
     const getStatusStyle = (status) => {
         switch (status?.toLowerCase()) {
             case "confirmed":
+                return "bg-blue-50 text-blue-700";
             case "active":
+                return "bg-purple-50 text-purple-700";
             case "paid":
                 return "bg-green-50 text-green-700";
             case "pending":
             case "unpaid":
                 return "bg-yellow-50 text-yellow-700";
             case "completed":
-                return "bg-blue-50 text-blue-700";
+                return "bg-green-50 text-green-700";
             case "cancelled":
                 return "bg-red-50 text-red-700";
             default:

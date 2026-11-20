@@ -228,12 +228,17 @@ export default function OwnerDashboard() {
 
                                     <span
                                         className={`rounded-full px-3 py-1 text-xs font-medium ${
-                                            rental.status === "confirmed" ||
-                                            rental.status === "active"
-                                                ? "bg-green-50 text-green-700"
-                                                : rental.status === "pending"
-                                                    ? "bg-yellow-50 text-yellow-700"
-                                                    : "bg-gray-100 text-gray-600"
+                                            rental.status === "confirmed"
+                                                ? "bg-blue-50 text-blue-700"
+                                                : rental.status === "active"
+                                                    ? "bg-purple-50 text-purple-700"
+                                                    : rental.status === "pending"
+                                                        ? "bg-yellow-50 text-yellow-700"
+                                                        : rental.status === "completed"
+                                                            ? "bg-green-50 text-green-700"
+                                                            : rental.status === "cancelled"
+                                                                ? "bg-red-50 text-red-700"
+                                                                : "bg-gray-100 text-gray-600"
                                         }`}
                                     >
                                         {rental.status

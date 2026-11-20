@@ -226,7 +226,7 @@ export default function OwnerAnalyticsPage() {
                                 <Bar
                                     dataKey="earnings"
                                     name="Earnings"
-                                    fill="#16a34a"
+                                    fill="#35C77A"
                                     radius={[6, 6, 0, 0]}
                                     maxBarSize={55}
                                 />

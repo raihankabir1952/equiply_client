@@ -322,7 +322,9 @@ export default function MyEquipmentPage() {
                                                         ? "bg-green-50 text-green-700"
                                                         : item.status === "pending"
                                                             ? "bg-yellow-50 text-yellow-700"
-                                                            : "bg-gray-100 text-gray-600"
+                                                            : item.status === "rejected"
+                                                                ? "bg-red-50 text-red-700"
+                                                                : "bg-gray-100 text-gray-600"
                                                     }`}
                                             >
                                                 {item.status?.charAt(0).toUpperCase() +

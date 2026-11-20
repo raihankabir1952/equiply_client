@@ -1,0 +1,154 @@
+.dashboardContent {
+  min-width: 0;
+  color: #334155;
+}
+
+.dashboardContent :global(h1) {
+  color: #142b45;
+  font-size: clamp(1.5rem, 2vw, 1.8rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+.dashboardContent :global(h2),
+.dashboardContent :global(h3) {
+  letter-spacing: -0.02em;
+}
+
+.dashboardContent :global(.text-gray-900),
+.dashboardContent :global(.text-gray-800),
+.dashboardContent :global(.text-gray-700) {
+  color: #334155;
+}
+
+.dashboardContent :global(.text-gray-600) {
+  color: #475569;
+}
+
+.dashboardContent :global(.text-gray-500) {
+  color: #64748b;
+}
+
+.dashboardContent :global(.text-gray-400) {
+  color: #94a3b8;
+}
+
+.dashboardContent :global(.border-gray-100),
+.dashboardContent :global(.border-gray-200),
+.dashboardContent :global(.border-gray-300) {
+  border-color: #e2e8f0;
+}
+
+.dashboardContent :global(.bg-gray-50) {
+  background-color: #f8fafc;
+}
+
+.dashboardContent :global(.bg-gray-100) {
+  background-color: #f1f5f9;
+}
+
+.dashboardContent :global(.rounded-xl.border.bg-white) {
+  border-color: #e3eaf1;
+  border-radius: 1rem;
+  box-shadow: 0 8px 24px rgb(20 43 69 / 4%);
+}
+
+.dashboardContent :global(.rounded-full.px-3.py-1) {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.dashboardContent :global(.rounded-2xl.bg-white) {
+  border: 1px solid #e3eaf1;
+  border-radius: 1.25rem;
+  box-shadow: 0 24px 60px rgb(20 43 69 / 18%);
+}
+
+.dashboardContent :global(.grid > .rounded-xl.border.bg-white) {
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.dashboardContent :global(.grid > .rounded-xl.border.bg-white:hover) {
+  border-color: #cbd8e4;
+  box-shadow: 0 14px 30px rgb(20 43 69 / 8%);
+  transform: translateY(-2px);
+}
+
+.dashboardContent :global(table) {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.dashboardContent :global(thead) {
+  background-color: #f8fafc;
+}
+
+.dashboardContent :global(th) {
+  border-bottom: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.dashboardContent :global(td) {
+  border-color: #edf1f5;
+}
+
+.dashboardContent :global(tbody tr:hover) {
+  background-color: #f8fafc;
+}
+
+.dashboardContent :global(input:not([type="file"])),
+.dashboardContent :global(select:not(.rounded-full)),
+.dashboardContent :global(textarea) {
+  border-color: #d7e0e9;
+  border-radius: 0.75rem;
+  color: #142b45;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.dashboardContent :global(input:not([type="file"]):focus),
+.dashboardContent :global(select:not(.rounded-full):focus),
+.dashboardContent :global(textarea:focus) {
+  border-color: #35c77a;
+  box-shadow: 0 0 0 3px rgb(53 199 122 / 14%);
+  outline: none;
+}
+
+.dashboardContent :global(input::placeholder),
+.dashboardContent :global(textarea::placeholder) {
+  color: #94a3b8;
+}
+
+.dashboardContent :global(button:focus-visible),
+.dashboardContent :global(a:focus-visible) {
+  outline: 2px solid rgb(53 199 122 / 65%);
+  outline-offset: 2px;
+}
+
+@media (max-width: 639px) {
+  .dashboardContent :global(.rounded-xl.border.bg-white.p-6) {
+    padding: 1.125rem;
+  }
+
+  .dashboardContent :global(table) {
+    font-size: 0.8125rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboardContent :global(*) {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
