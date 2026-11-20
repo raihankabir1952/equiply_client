@@ -5,6 +5,7 @@ import { useSession } from "@/lib/auth-client";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import { toast } from "sonner";
+import { apiFetch } from "@/lib/api";
 
 function RentalDetailsContent() {
     const { id } = useParams();
@@ -33,12 +34,7 @@ function RentalDetailsContent() {
 
         const fetchRentalDetails = async () => {
             try {
-                const res = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/rentals/${id}`,
-                    {
-                        credentials: "include",
-                    }
-                );
+                const res = await apiFetch(`/rentals/${id}`);
 
                 const data = await res.json();
 
