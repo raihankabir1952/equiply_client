@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api";
 import {
     Check,
     X,
@@ -18,8 +19,6 @@ import { toast } from "sonner";
 export default function AllEquipmentPage() {
     const router = useRouter();
     const { data: session, isPending } = useSession();
-
-    const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
     const [equipments, setEquipments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -58,12 +57,8 @@ export default function AllEquipmentPage() {
         const fetchEquipments = async () => {
             try {
                 const [equipmentRes, usersRes] = await Promise.all([
-                    fetch(`${API_URL}/equipment`, {
-                        credentials: "include",
-                    }),
-                    fetch(`${API_URL}/users`, {
-                        credentials: "include",
-                    }),
+                    apiFetch("/equipment"),
+                    apiFetch("/users"),
                 ]);
 
                 const equipmentData = await equipmentRes.json();
@@ -91,25 +86,24 @@ export default function AllEquipmentPage() {
                 setEquipments(equipmentList);
             } catch (error) {
                 console.error(error);
-                toast.error("Failed to load equipment!");
+                toast.error(error.message || "Failed to load equipment!");
             } finally {
                 setLoading(false);
             }
         };
 
         fetchEquipments();
-    }, [session, API_URL]);
+    }, [session]);
 
     // Update equipment status
     const updateStatus = async (id, status) => {
         try {
             setProcessingId(id);
 
-            const response = await fetch(
-                `${API_URL}/equipment/${id}/status`,
+            const response = await apiFetch(
+                `/equipment/${id}/status`,
                 {
                     method: "PATCH",
-                    credentials: "include",
                     headers: {
                         "Content-Type": "application/json",
                     },
@@ -148,11 +142,10 @@ export default function AllEquipmentPage() {
         try {
             setProcessingId(id);
 
-            const response = await fetch(
-                `${API_URL}/equipment/${id}/admin`,
+            const response = await apiFetch(
+                `/equipment/${id}/admin`,
                 {
                     method: "DELETE",
-                    credentials: "include",
                 }
             );
 
@@ -223,9 +216,8 @@ export default function AllEquipmentPage() {
             const uploadData = new FormData();
             uploadData.append("image", file);
 
-            const response = await fetch(`${API_URL}/upload/image`, {
+            const response = await apiFetch("/upload/image", {
                 method: "POST",
-                credentials: "include",
                 body: uploadData,
             });
 
@@ -258,11 +250,10 @@ export default function AllEquipmentPage() {
         try {
             setSaving(true);
 
-            const response = await fetch(
-                `${API_URL}/equipment/${editingEquipment._id}/admin`,
+            const response = await apiFetch(
+                `/equipment/${editingEquipment._id}/admin`,
                 {
                     method: "PATCH",
-                    credentials: "include",
                     headers: {
                         "Content-Type": "application/json",
                     },
@@ -340,7 +331,9 @@ export default function AllEquipmentPage() {
                             <Package className="text-blue-600" size={22} />
                         </div>
                         <div>
-                            <p className="text-sm text-gray-500">Total Equipment</p>
+                            <p className="text-sm text-gray-500">
+                                Total Equipment
+                            </p>
                             <h3 className="text-2xl font-bold text-[#142B45]">
                                 {equipments.length}
                             </h3>
