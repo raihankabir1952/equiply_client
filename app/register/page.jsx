@@ -1,6 +1,7 @@
 
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -16,8 +17,10 @@ import {
 } from "lucide-react";
 import { signUp } from "@/lib/auth-client";
 import { toast } from "sonner";
+import { useSession } from "@/lib/auth-client";
 
 export default function RegisterPage() {
+  const { refetch } = useSession();
   const router = useRouter();
 
   const [showPassword, setShowPassword] = useState(false);
@@ -55,54 +58,75 @@ export default function RegisterPage() {
       return;
     }
 
-    try {
-      setLoading(true);
+try {
+    setLoading(true);
 
-
-      let imageUrl = "";
-
-      if (photo) {
-        const formData = new FormData();
-        formData.append("image", photo);
-
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/upload/image`,
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
-
-        const result = await response.json();
-
-        if (!response.ok) {
-          toast.error(result.message || "Image upload failed!");
-          return;
-        }
-
-        imageUrl = result.imageUrl;
-      }
-      const { data, error } = await signUp.email({
+    // Step 1: Create account
+    const { data, error } = await signUp.email({
         name: name.trim(),
         email: email.trim(),
         password,
-        image: imageUrl || undefined,
-      });
+    });
 
-      if (error) {
+    if (error) {
         toast.error(error.message || "Registration failed!");
         return;
-      }
+    }
 
-      if (data) {
-        toast.success("Account created successfully!")
+    if (data) {
+        // Step 2: Upload profile image after signup
+        if (photo) {
+            try {
+                const formData = new FormData();
+                formData.append("image", photo);
+
+                const uploadRes = await apiFetch("/upload/image", {
+                    method: "POST",
+                    body: formData,
+                });
+
+                const uploadData = await uploadRes.json();
+
+                if (!uploadRes.ok) {
+                    throw new Error(
+                        uploadData.message || "Image upload failed!"
+                    );
+                }
+
+                // Step 3: Save image URL to user profile
+                const profileRes = await apiFetch("/users/me", {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        image: uploadData.imageUrl,
+                    }),
+                });
+
+                if (!profileRes.ok) {
+                    throw new Error("Failed to update profile image!");
+                }
+                await refetch();
+            } catch (imageError) {
+                console.error("Profile image error:", imageError);
+                toast.error(
+                    "Account created, but profile image upload failed!"
+                );
+
+                router.push("/");
+                return;
+            }
+        }
+
+        toast.success("Account created successfully!");
+
         setTimeout(() => {
-          router.push('/');
-        }, 1500)
-      }
-    } catch (error) {
+            router.push("/");
+        }, 1500);
+    }
+}  catch (error) {
       console.error("Registration error:", error);
-
       toast.error("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
