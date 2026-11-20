@@ -1,6 +1,6 @@
 
 "use client";
-
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -37,15 +37,12 @@ export default function CustomerDashboard() {
 
         const fetchRentals = async () => {
             try {
-                const res = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/rentals`,
-                    {
-                        credentials: "include",
-                    }
-                );
+                const res = await apiFetch("/rentals");
 
                 const data = await res.json();
-                console.log("Equipment Data:", data.rentals[0]?.equipment);
+                console.log("API Status:", res.status);
+                console.log("API Response:", data);
+                console.log("Equipment Data:", data.rentals?.[0]?.equipment);
 
                 if (res.ok) {
                     setRentals(data.rentals || []);
@@ -233,16 +230,15 @@ export default function CustomerDashboard() {
                                     </p>
 
                                     <span
-                                        className={`rounded-full px-3 py-1 text-xs font-medium ${
-                                            rental.status === "confirmed" ||
+                                        className={`rounded-full px-3 py-1 text-xs font-medium ${rental.status === "confirmed" ||
                                             rental.status === "active"
-                                                ? "bg-green-50 text-green-700"
-                                                : rental.status === "pending"
+                                            ? "bg-green-50 text-green-700"
+                                            : rental.status === "pending"
                                                 ? "bg-yellow-50 text-yellow-700"
                                                 : rental.status === "completed"
-                                                ? "bg-blue-50 text-blue-700"
-                                                : "bg-gray-100 text-gray-600"
-                                        }`}
+                                                    ? "bg-blue-50 text-blue-700"
+                                                    : "bg-gray-100 text-gray-600"
+                                            }`}
                                     >
                                         {rental.status.charAt(0).toUpperCase() +
                                             rental.status.slice(1)}

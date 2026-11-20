@@ -4,6 +4,7 @@
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api";
 
 export default function MyRentalsPage() {
     const [activeFilter, setActiveFilter] = useState("All");
@@ -32,12 +33,7 @@ export default function MyRentalsPage() {
 
         const fetchRentals = async () => {
             try {
-                const res = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/rentals`,
-                    {
-                        credentials: "include",
-                    }
-                );
+                const res = await apiFetch("/rentals");
 
                 const data = await res.json();
 
@@ -93,14 +89,14 @@ export default function MyRentalsPage() {
 
         paidAt: rental.paidAt
             ? new Date(rental.paidAt).toLocaleString("en-BD", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                  hour12: true,
-                  timeZone: "Asia/Dhaka",
-              })
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+                timeZone: "Asia/Dhaka",
+            })
             : null,
 
         duration: rental.rentalDays || 0,
@@ -114,8 +110,8 @@ export default function MyRentalsPage() {
         activeFilter === "All"
             ? formattedBookings
             : formattedBookings.filter(
-                  (booking) => booking.status === activeFilter.toLowerCase()
-              );
+                (booking) => booking.status === activeFilter.toLowerCase()
+            );
 
     // Status styles
     const getStatusStyle = (status) => {
@@ -153,11 +149,10 @@ export default function MyRentalsPage() {
                     <button
                         key={filter}
                         onClick={() => setActiveFilter(filter)}
-                        className={`rounded-lg px-5 py-2.5 text-sm font-medium transition-colors ${
-                            activeFilter === filter
+                        className={`rounded-lg px-5 py-2.5 text-sm font-medium transition-colors ${activeFilter === filter
                                 ? "bg-[#142B45] text-white"
                                 : "border border-gray-200 bg-white text-gray-600 hover:border-[#35C77A] hover:text-[#35C77A]"
-                        }`}
+                            }`}
                     >
                         {filter}
                     </button>
