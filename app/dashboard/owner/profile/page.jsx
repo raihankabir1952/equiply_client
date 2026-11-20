@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api";
 import {
     Camera,
     UserRound,
@@ -64,137 +65,125 @@ export default function OwnerProfilePage() {
 
     // Update Profile
     const handleSubmit = async (e) => {
-        e.preventDefault();
+    e.preventDefault();
 
-        if (!name.trim()) {
-            toast.error("Name cannot be empty!");
-            return;
-        }
+    if (!name.trim()) {
+        toast.error("Name cannot be empty!");
+        return;
+    }
 
-        setSaving(true);
+    setSaving(true);
 
-        try {
-            let imageUrl = session.user.image || "";
+    try {
+        let imageUrl = session.user.image || "";
 
-            // Upload Image to ImgBB
-            if (photo) {
-                const formData = new FormData();
-                formData.append("image", photo);
+        // Upload Image to ImgBB
+        if (photo) {
+            const formData = new FormData();
+            formData.append("image", photo);
 
-                const uploadRes = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/upload/image`,
-                    {
-                        method: "POST",
-                        credentials: "include",
-                        body: formData,
-                    }
-                );
+            const uploadRes = await apiFetch("/upload/image", {
+                method: "POST",
+                body: formData,
+            });
 
-                const uploadData = await uploadRes.json();
+            const uploadData = await uploadRes.json();
 
-                if (!uploadRes.ok) {
-                    throw new Error(
-                        uploadData.message || "Image upload failed!"
-                    );
-                }
-
-                imageUrl = uploadData.imageUrl;
-            }
-
-            // Update User Profile
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/users/me`,
-                {
-                    method: "PATCH",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    credentials: "include",
-                    body: JSON.stringify({
-                        name: name.trim(),
-                        phoneNumber: phoneNumber.trim(),
-                        address: address.trim(),
-                        ...(photo && { image: imageUrl }),
-                    }),
-                }
-            );
-
-            const data = await res.json();
-
-            if (!res.ok) {
+            if (!uploadRes.ok) {
                 throw new Error(
-                    data.message || "Failed to update profile!"
+                    uploadData.message || "Image upload failed!"
                 );
             }
 
-            await refetch();
-
-            setPhoto(null);
-            setPreview(imageUrl);
-
-            if (fileInputRef.current) {
-                fileInputRef.current.value = "";
-            }
-
-            toast.success("Profile updated successfully!");
-        } catch (error) {
-            console.error("Update owner profile error:", error);
-            toast.error(error.message || "Failed to update profile!");
-        } finally {
-            setSaving(false);
+            imageUrl = uploadData.imageUrl;
         }
-    };
+
+        // Update User Profile
+        const res = await apiFetch("/users/me", {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                name: name.trim(),
+                phoneNumber: phoneNumber.trim(),
+                address: address.trim(),
+                ...(photo && { image: imageUrl }),
+            }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(
+                data.message || "Failed to update profile!"
+            );
+        }
+
+        await refetch();
+
+        setPhoto(null);
+        setPreview(imageUrl);
+
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+
+        toast.success("Profile updated successfully!");
+    } catch (error) {
+        console.error("Update owner profile error:", error);
+        toast.error(error.message || "Failed to update profile!");
+    } finally {
+        setSaving(false);
+    }
+};
 
     // Remove Profile Photo
     const handleRemovePhoto = async () => {
-        const confirmed = window.confirm(
-            "Are you sure you want to remove your profile photo?"
-        );
+    const confirmed = window.confirm(
+        "Are you sure you want to remove your profile photo?"
+    );
 
-        if (!confirmed) return;
+    if (!confirmed) return;
 
-        setRemoving(true);
+    setRemoving(true);
 
-        try {
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/users/me`,
-                {
-                    method: "PATCH",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    credentials: "include",
-                    body: JSON.stringify({
-                        image: null,
-                    }),
-                }
+    try {
+        const res = await apiFetch("/users/me", {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                image: null,
+            }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(
+                data.message || "Failed to remove profile photo!"
             );
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(
-                    data.message || "Failed to remove profile photo!"
-                );
-            }
-
-            await refetch();
-
-            setPhoto(null);
-            setPreview("");
-
-            if (fileInputRef.current) {
-                fileInputRef.current.value = "";
-            }
-
-            toast.success("Profile photo removed successfully!");
-        } catch (error) {
-            console.error("Remove owner photo error:", error);
-            toast.error(error.message || "Failed to remove profile photo!");
-        } finally {
-            setRemoving(false);
         }
-    };
+
+        await refetch();
+
+        setPhoto(null);
+        setPreview("");
+
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+
+        toast.success("Profile photo removed successfully!");
+    } catch (error) {
+        console.error("Remove owner photo error:", error);
+        toast.error(error.message || "Failed to remove profile photo!");
+    } finally {
+        setRemoving(false);
+    }
+};
 
     return (
         <div className="mx-auto max-w-3xl space-y-6">

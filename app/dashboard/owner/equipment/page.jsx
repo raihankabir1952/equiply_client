@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api";
 import {
     Eye,
     Pencil,
@@ -55,28 +56,23 @@ export default function MyEquipmentPage() {
 
     // Fetch Owner Equipment
     const fetchEquipment = async () => {
-        try {
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/equipment/my-equipment`,
-                {
-                    credentials: "include",
-                }
-            );
+    try {
+        const res = await apiFetch("/equipment/my-equipment");
 
-            const data = await res.json();
+        const data = await res.json();
 
-            if (res.ok) {
-                setEquipment(data.equipment || []);
-            } else {
-                toast.error(data.message || "Failed to load equipment.");
-            }
-        } catch (error) {
-            console.error("Equipment fetch error:", error);
-            toast.error("Failed to fetch equipment.");
-        } finally {
-            setLoading(false);
+        if (res.ok) {
+            setEquipment(data.equipment || []);
+        } else {
+            toast.error(data.message || "Failed to load equipment.");
         }
-    };
+    } catch (error) {
+        console.error("Equipment fetch error:", error);
+        toast.error("Failed to fetch equipment.");
+    } finally {
+        setLoading(false);
+    }
+};
 
     useEffect(() => {
         if (!isPending && session?.user?.role === "owner") {
@@ -114,79 +110,74 @@ export default function MyEquipmentPage() {
 
     // Update Equipment
     const handleUpdate = async (e) => {
-        e.preventDefault();
+    e.preventDefault();
 
-        if (!selectedEquipment) return;
+    if (!selectedEquipment) return;
 
-        setUpdating(true);
+    setUpdating(true);
 
-        try {
-            let imageUrl = selectedEquipment.image;
+    try {
+        let imageUrl = selectedEquipment.image;
 
-            // Upload New Image if Selected
-            if (newImage) {
-                const imageData = new FormData();
-                imageData.append("image", newImage);
+        // Upload New Image if Selected
+        if (newImage) {
+            const imageData = new FormData();
+            imageData.append("image", newImage);
 
-                const uploadRes = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/upload/image`,
-                    {
-                        method: "POST",
-                        credentials: "include",
-                        body: imageData,
-                    }
+            const uploadRes = await apiFetch("/upload/image", {
+                method: "POST",
+                body: imageData,
+            });
+
+            const uploadResult = await uploadRes.json();
+
+            if (!uploadRes.ok) {
+                throw new Error(
+                    uploadResult.message || "Image upload failed!"
                 );
-
-                const uploadResult = await uploadRes.json();
-
-                if (!uploadRes.ok) {
-                    throw new Error(
-                        uploadResult.message || "Image upload failed!"
-                    );
-                }
-
-                imageUrl = uploadResult.imageUrl;
             }
 
-            // Update Equipment API
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/equipment/${selectedEquipment._id}`,
-                {
-                    method: "PATCH",
-                    credentials: "include",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        ...formData,
-                        image: imageUrl,
-                        price: Number(formData.price),
-                        availableQuantity: Number(
-                            formData.availableQuantity
-                        ),
-                    }),
-                }
-            );
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(data.message || "Equipment update failed!");
-            }
-
-            toast.success("Equipment updated successfully!");
-
-            setSelectedEquipment(null);
-            setNewImage(null);
-
-            await fetchEquipment();
-        } catch (error) {
-            console.error("Update equipment error:", error);
-            toast.error(error.message || "Failed to update equipment.");
-        } finally {
-            setUpdating(false);
+            imageUrl = uploadResult.imageUrl;
         }
-    };
+
+        // Update Equipment API
+        const res = await apiFetch(
+            `/equipment/${selectedEquipment._id}`,
+            {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    ...formData,
+                    image: imageUrl,
+                    price: Number(formData.price),
+                    availableQuantity: Number(
+                        formData.availableQuantity
+                    ),
+                }),
+            }
+        );
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(data.message || "Equipment update failed!");
+        }
+
+        toast.success("Equipment updated successfully!");
+
+        setSelectedEquipment(null);
+        setNewImage(null);
+
+        await fetchEquipment();
+    } catch (error) {
+        console.error("Update equipment error:", error);
+        toast.error(error.message || "Failed to update equipment.");
+    } finally {
+        setUpdating(false);
+    }
+};
 
     // View Equipment Details
     const handleView = (item) => {
@@ -195,39 +186,35 @@ export default function MyEquipmentPage() {
 
     // Delete Equipment
     const handleDelete = async (id) => {
-        const confirmed = window.confirm(
-            "Are you sure you want to delete this equipment?"
-        );
+    const confirmed = window.confirm(
+        "Are you sure you want to delete this equipment?"
+    );
 
-        if (!confirmed) return;
+    if (!confirmed) return;
 
-        setDeleting(true);
+    setDeleting(true);
 
-        try {
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/equipment/${id}`,
-                {
-                    method: "DELETE",
-                    credentials: "include",
-                }
-            );
+    try {
+        const res = await apiFetch(`/equipment/${id}`, {
+            method: "DELETE",
+        });
 
-            const data = await res.json();
+        const data = await res.json();
 
-            if (!res.ok) {
-                throw new Error(data.message || "Failed to delete equipment!");
-            }
-
-            toast.success("Equipment deleted successfully!");
-
-            await fetchEquipment();
-        } catch (error) {
-            console.error("Delete equipment error:", error);
-            toast.error(error.message || "Failed to delete equipment.");
-        } finally {
-            setDeleting(false);
+        if (!res.ok) {
+            throw new Error(data.message || "Failed to delete equipment!");
         }
-    };
+
+        toast.success("Equipment deleted successfully!");
+
+        await fetchEquipment();
+    } catch (error) {
+        console.error("Delete equipment error:", error);
+        toast.error(error.message || "Failed to delete equipment.");
+    } finally {
+        setDeleting(false);
+    }
+};
 
     if (isPending || !session) {
         return <p>Loading...</p>;

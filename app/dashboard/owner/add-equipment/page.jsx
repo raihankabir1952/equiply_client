@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { apiFetch } from "@/lib/api";
 
 export default function AddEquipmentPage() {
     const router = useRouter();
@@ -48,83 +49,75 @@ export default function AddEquipmentPage() {
 
     // Handle Equipment Submission
     const handleSubmit = async (e) => {
-        e.preventDefault();
+    e.preventDefault();
 
-        if (!image) {
-            return toast.error("Please upload an equipment image!");
+    if (!image) {
+        return toast.error("Please upload an equipment image!");
+    }
+
+    setLoading(true);
+
+    try {
+        // Step 1: Upload Image to ImgBB
+        const imageData = new FormData();
+        imageData.append("image", image);
+
+        const uploadRes = await apiFetch("/upload/image", {
+            method: "POST",
+            body: imageData,
+        });
+
+        const uploadResult = await uploadRes.json();
+
+        if (!uploadRes.ok) {
+            throw new Error(uploadResult.message || "Image upload failed!");
         }
 
-        setLoading(true);
+        // Step 2: Create Equipment
+        const equipmentData = {
+            ...formData,
+            image: uploadResult.imageUrl,
+            price: Number(formData.price),
+            availableQuantity: Number(formData.availableQuantity),
+        };
 
-        try {
-            // Step 1: Upload Image to ImgBB
-            const imageData = new FormData();
-            imageData.append("image", image);
+        const res = await apiFetch("/equipment", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(equipmentData),
+        });
 
-            const uploadRes = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/upload/image`,
-                {
-                    method: "POST",
-                    credentials: "include",
-                    body: imageData,
-                }
-            );
+        const data = await res.json();
 
-            const uploadResult = await uploadRes.json();
-
-            if (!uploadRes.ok) {
-                throw new Error(uploadResult.message || "Image upload failed!");
-            }
-
-            // Step 2: Create Equipment
-            const equipmentData = {
-                ...formData,
-                image: uploadResult.imageUrl,
-                price: Number(formData.price),
-                availableQuantity: Number(formData.availableQuantity),
-            };
-
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/equipment`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    credentials: "include",
-                    body: JSON.stringify(equipmentData),
-                }
-            );
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(data.message || "Failed to add equipment!");
-            }
-
-            toast.success("Equipment added successfully!");
-
-            setFormData({
-                name: "",
-                description: "",
-                price: "",
-                category: "",
-                rentalType: "",
-                location: "",
-                availableQuantity: "",
-                termsAndConditions: "",
-            });
-
-            setImage(null);
-
-            router.push("/dashboard/owner/equipment");
-        } catch (error) {
-            console.error("Add equipment error:", error);
-            toast.error(error.message || "Something went wrong!");
-        } finally {
-            setLoading(false);
+        if (!res.ok) {
+            throw new Error(data.message || "Failed to add equipment!");
         }
-    };
+
+        toast.success("Equipment added successfully!");
+
+        setFormData({
+            name: "",
+            description: "",
+            price: "",
+            category: "",
+            rentalType: "",
+            location: "",
+            availableQuantity: "",
+            termsAndConditions: "",
+        });
+
+        setImage(null);
+
+        router.push("/dashboard/owner/equipment");
+    } catch (error) {
+        console.error("Add equipment error:", error);
+        toast.error(error.message || "Something went wrong!");
+    } finally {
+        setLoading(false);
+    }
+};
 
     if (isPending || !session) {
         return <p>Loading...</p>;
