@@ -21,6 +21,7 @@ export default function EquipmentPage() {
 
     const [search, setSearch] = useState("");
     const [category, setCategory] = useState("");
+    const [availability, setAvailability] = useState("");
     const [minPrice, setMinPrice] = useState("");
     const [maxPrice, setMaxPrice] = useState("");
     const [sort, setSort] = useState("newest");
@@ -38,6 +39,7 @@ export default function EquipmentPage() {
 
         setSearch(params.get("search") || "");
         setCategory(params.get("category") || "");
+        setAvailability(params.get("availability") || "");
         setMinPrice(params.get("minPrice") || "");
         setMaxPrice(params.get("maxPrice") || "");
         setSort(params.get("sort") || "newest");
@@ -77,6 +79,7 @@ export default function EquipmentPage() {
 
         if (search.trim()) params.set("search", search.trim());
         if (category) params.set("category", category);
+        if (availability) params.set("availability", availability);
         if (minPrice !== "") params.set("minPrice", minPrice);
         if (maxPrice !== "") params.set("maxPrice", maxPrice);
         if (sort !== "newest") params.set("sort", sort);
@@ -88,7 +91,15 @@ export default function EquipmentPage() {
             : "/equipment";
 
         window.history.replaceState(null, "", newUrl);
-    }, [search, category, minPrice, maxPrice, sort, urlInitialized]);
+    }, [
+        search,
+        category,
+        availability,
+        minPrice,
+        maxPrice,
+        sort,
+        urlInitialized,
+    ]);
 
     // Fetch equipment from backend
     useEffect(() => {
@@ -103,6 +114,7 @@ export default function EquipmentPage() {
 
                 if (search.trim()) params.append("search", search.trim());
                 if (category) params.append("category", category);
+                if (availability) params.append("availability", availability);
                 if (minPrice !== "") params.append("minPrice", minPrice);
                 if (maxPrice !== "") params.append("maxPrice", maxPrice);
                 if (sort) params.append("sort", sort);
@@ -142,7 +154,15 @@ export default function EquipmentPage() {
         const timeout = setTimeout(fetchEquipment, 400);
 
         return () => clearTimeout(timeout);
-    }, [search, category, minPrice, maxPrice, sort, urlInitialized]);
+    }, [
+        search,
+        category,
+        availability,
+        minPrice,
+        maxPrice,
+        sort,
+        urlInitialized,
+    ]);
 
     // Add or remove favorite
     const toggleFavorite = async (equipmentId) => {
@@ -202,6 +222,7 @@ export default function EquipmentPage() {
     const resetFilters = () => {
         setSearch("");
         setCategory("");
+        setAvailability("");
         setMinPrice("");
         setMaxPrice("");
         setSort("newest");
@@ -243,7 +264,7 @@ export default function EquipmentPage() {
                         </h2>
                     </div>
 
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
 
                         {/* Search */}
                         <div className="relative lg:col-span-2">
@@ -274,6 +295,17 @@ export default function EquipmentPage() {
                                     {item}
                                 </option>
                             ))}
+                        </select>
+
+                        {/* Availability */}
+                        <select
+                            value={availability}
+                            onChange={(e) => setAvailability(e.target.value)}
+                            className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm text-slate-600 outline-none focus:border-[#35C77A]"
+                        >
+                            <option value="">All Availability</option>
+                            <option value="available">Available</option>
+                            <option value="unavailable">Unavailable</option>
                         </select>
 
                         {/* Minimum Price */}
@@ -395,7 +427,7 @@ export default function EquipmentPage() {
 
                                             <span className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-[#35C77A] px-3 py-1.5 text-xs font-bold text-[#142B45] shadow-sm">
                                                 <span className="h-1.5 w-1.5 rounded-full bg-[#142B45]" />
-                                                {item.availableQuantity > 0
+                                                {item.isAvailable
                                                     ? "Available"
                                                     : "Unavailable"}
                                             </span>
