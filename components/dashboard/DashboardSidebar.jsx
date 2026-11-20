@@ -70,6 +70,11 @@ const ownerMenu = [
         icon: ClipboardList,
     },
     {
+        title: "Analytics",
+        url: "/dashboard/owner/analytics",
+        icon: ChartNoAxesCombined
+    },
+    {
         title: "My Profile",
         url: "/dashboard/owner/profile",
         icon: UserRound,
