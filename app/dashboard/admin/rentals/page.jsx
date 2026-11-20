@@ -1,53 +1,20 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { ClipboardList, CalendarDays, Wallet } from "lucide-react";
 
-const rentalData = [
-    {
-        id: 1,
-        customer: "Tanvir Ahmed",
-        customerEmail: "tanvir@example.com",
-        owner: "Nusrat Jahan",
-        ownerEmail: "nusrat@example.com",
-        equipment: "Professional DSLR Camera",
-        duration: "18 Nov - 20 Nov, 2026",
-        amount: 5000,
-        paymentStatus: "Paid",
-        bookingStatus: "Confirmed",
-    },
-    {
-        id: 2,
-        customer: "Sadia Rahman",
-        customerEmail: "sadia@example.com",
-        owner: "Arif Hossain",
-        ownerEmail: "arif@example.com",
-        equipment: "Heavy Duty Excavator",
-        duration: "19 Nov - 21 Nov, 2026",
-        amount: 25500,
-        paymentStatus: "Pending",
-        bookingStatus: "Pending",
-    },
-    {
-        id: 3,
-        customer: "Raihan Ahmed",
-        customerEmail: "raihan@example.com",
-        owner: "Tanvir Ahmed",
-        ownerEmail: "tanvir@example.com",
-        equipment: "Industrial Power Generator",
-        duration: "20 Nov - 22 Nov, 2026",
-        amount: 10800,
-        paymentStatus: "Paid",
-        bookingStatus: "Completed",
-    },
-];
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function AllRentalsPage() {
     const router = useRouter();
     const { data: session, isPending } = useSession();
+
+    const [rentals, setRentals] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
 
     useEffect(() => {
         if (!isPending && !session) {
@@ -59,8 +26,93 @@ export default function AllRentalsPage() {
         }
     }, [session, isPending, router]);
 
+    useEffect(() => {
+        if (!session || session.user.role !== "admin") return;
+
+        const fetchRentals = async () => {
+            try {
+                setLoading(true);
+                setError("");
+
+                const response = await fetch(`${API_URL}/rentals/admin`, {
+                    credentials: "include",
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || "Failed to fetch rentals!");
+                }
+
+                setRentals(data.rentals || []);
+            } catch (error) {
+                console.error("Fetch rentals error:", error);
+                setError(error.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchRentals();
+    }, [session]);
+
     if (isPending || !session) {
         return <p>Loading...</p>;
+    }
+
+    const activeRentals = rentals.filter(
+        (rental) => ["confirmed", "active"].includes(rental.status)
+    ).length;
+
+    const totalAmount = rentals.reduce(
+        (total, rental) => total + Number(rental.totalAmount || 0),
+        0
+    );
+
+    const formatDate = (date) => {
+        if (!date) return "N/A";
+
+        return new Date(date).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            timeZone: "Asia/Dhaka",
+        });
+    };
+
+    const formatDuration = (startDate, endDate) => {
+        if (!startDate || !endDate) return "N/A";
+
+        return `${formatDate(startDate)} - ${formatDate(endDate)}`;
+    };
+
+    const getBookingStatusStyle = (status) => {
+        switch (status) {
+            case "confirmed":
+                return "bg-blue-50 text-blue-700";
+            case "active":
+                return "bg-purple-50 text-purple-700";
+            case "completed":
+                return "bg-green-50 text-green-700";
+            case "cancelled":
+                return "bg-red-50 text-red-700";
+            default:
+                return "bg-yellow-50 text-yellow-700";
+        }
+    };
+
+    const getPaymentStatusStyle = (status) => {
+        return status === "paid"
+            ? "bg-green-50 text-green-700"
+            : "bg-yellow-50 text-yellow-700";
+    };
+
+    if (loading) {
+        return (
+            <div className="py-20 text-center text-gray-500">
+                Loading rental records...
+            </div>
+        );
     }
 
     return (
@@ -76,6 +128,12 @@ export default function AllRentalsPage() {
                 </p>
             </div>
 
+            {error && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+                    {error}
+                </div>
+            )}
+
             {/* Summary Cards */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
 
@@ -87,7 +145,7 @@ export default function AllRentalsPage() {
                         <div>
                             <p className="text-sm text-gray-500">Total Rentals</p>
                             <h3 className="text-2xl font-bold text-[#142B45]">
-                                {rentalData.length}
+                                {rentals.length}
                             </h3>
                         </div>
                     </div>
@@ -101,9 +159,7 @@ export default function AllRentalsPage() {
                         <div>
                             <p className="text-sm text-gray-500">Active Rentals</p>
                             <h3 className="text-2xl font-bold text-[#142B45]">
-                                {rentalData.filter(
-                                    (item) => item.bookingStatus === "Confirmed"
-                                ).length}
+                                {activeRentals}
                             </h3>
                         </div>
                     </div>
@@ -117,9 +173,7 @@ export default function AllRentalsPage() {
                         <div>
                             <p className="text-sm text-gray-500">Total Booking Amount</p>
                             <h3 className="text-2xl font-bold text-[#142B45]">
-                                ৳{rentalData
-                                    .reduce((total, item) => total + item.amount, 0)
-                                    .toLocaleString()}
+                                ৳{totalAmount.toLocaleString("en-BD")}
                             </h3>
                         </div>
                     </div>
@@ -169,73 +223,79 @@ export default function AllRentalsPage() {
                         </thead>
 
                         <tbody className="divide-y divide-gray-100">
-                            {rentalData.map((rental) => (
-                                <tr
-                                    key={rental.id}
-                                    className="text-sm transition hover:bg-gray-50"
-                                >
 
-                                    {/* Customer Information */}
-                                    <td className="px-5 py-4">
-                                        <p className="font-semibold text-[#142B45]">
-                                            {rental.customer}
-                                        </p>
-                                        <p className="mt-1 text-xs text-gray-500">
-                                            {rental.customerEmail}
-                                        </p>
+                            {rentals.length === 0 ? (
+                                <tr>
+                                    <td
+                                        colSpan="7"
+                                        className="px-5 py-12 text-center text-gray-500"
+                                    >
+                                        No rental records found.
                                     </td>
-
-                                    {/* Owner Information */}
-                                    <td className="px-5 py-4">
-                                        <p className="font-semibold text-[#142B45]">
-                                            {rental.owner}
-                                        </p>
-                                        <p className="mt-1 text-xs text-gray-500">
-                                            {rental.ownerEmail}
-                                        </p>
-                                    </td>
-
-                                    {/* Equipment */}
-                                    <td className="px-5 py-4 font-medium text-[#142B45]">
-                                        {rental.equipment}
-                                    </td>
-
-                                    {/* Rental Duration */}
-                                    <td className="px-5 py-4 whitespace-nowrap text-gray-600">
-                                        {rental.duration}
-                                    </td>
-
-                                    {/* Booking Amount */}
-                                    <td className="px-5 py-4 font-semibold text-[#142B45]">
-                                        ৳{rental.amount.toLocaleString()}
-                                    </td>
-
-                                    {/* Payment Status */}
-                                    <td className="px-5 py-4">
-                                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                                            rental.paymentStatus === "Paid"
-                                                ? "bg-green-50 text-green-700"
-                                                : "bg-yellow-50 text-yellow-700"
-                                        }`}>
-                                            {rental.paymentStatus}
-                                        </span>
-                                    </td>
-
-                                    {/* Booking Status */}
-                                    <td className="px-5 py-4">
-                                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                                            rental.bookingStatus === "Confirmed"
-                                                ? "bg-blue-50 text-blue-700"
-                                                : rental.bookingStatus === "Completed"
-                                                ? "bg-green-50 text-green-700"
-                                                : "bg-yellow-50 text-yellow-700"
-                                        }`}>
-                                            {rental.bookingStatus}
-                                        </span>
-                                    </td>
-
                                 </tr>
-                            ))}
+                            ) : (
+                                rentals.map((rental) => (
+                                    <tr
+                                        key={rental._id}
+                                        className="text-sm transition hover:bg-gray-50"
+                                    >
+
+                                        {/* Customer Information */}
+                                        <td className="px-5 py-4">
+                                            <p className="font-semibold text-[#142B45]">
+                                                {rental.customer?.name || "Unknown Customer"}
+                                            </p>
+                                            <p className="mt-1 text-xs text-gray-500">
+                                                {rental.customer?.email || "N/A"}
+                                            </p>
+                                        </td>
+
+                                        {/* Owner Information */}
+                                        <td className="px-5 py-4">
+                                            <p className="font-semibold text-[#142B45]">
+                                                {rental.owner?.name || "Unknown Owner"}
+                                            </p>
+                                            <p className="mt-1 text-xs text-gray-500">
+                                                {rental.owner?.email || "N/A"}
+                                            </p>
+                                        </td>
+
+                                        {/* Equipment */}
+                                        <td className="px-5 py-4 font-medium text-[#142B45]">
+                                            {rental.equipment?.name || "Equipment unavailable"}
+                                        </td>
+
+                                        {/* Rental Duration */}
+                                        <td className="px-5 py-4 whitespace-nowrap text-gray-600">
+                                            {formatDuration(
+                                                rental.startDate,
+                                                rental.endDate
+                                            )}
+                                        </td>
+
+                                        {/* Booking Amount */}
+                                        <td className="px-5 py-4 font-semibold text-[#142B45]">
+                                            ৳{Number(rental.totalAmount || 0).toLocaleString("en-BD")}
+                                        </td>
+
+                                        {/* Payment Status */}
+                                        <td className="px-5 py-4">
+                                            <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${getPaymentStatusStyle(rental.paymentStatus)}`}>
+                                                {rental.paymentStatus || "unpaid"}
+                                            </span>
+                                        </td>
+
+                                        {/* Booking Status */}
+                                        <td className="px-5 py-4">
+                                            <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${getBookingStatusStyle(rental.status)}`}>
+                                                {rental.status || "pending"}
+                                            </span>
+                                        </td>
+
+                                    </tr>
+                                ))
+                            )}
+
                         </tbody>
 
                     </table>
@@ -243,7 +303,7 @@ export default function AllRentalsPage() {
 
                 <div className="border-t border-gray-100 px-5 py-4">
                     <p className="text-sm text-gray-500">
-                        Showing {rentalData.length} rental records
+                        Showing {rentals.length} rental records
                     </p>
                 </div>
 
