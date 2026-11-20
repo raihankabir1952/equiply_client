@@ -1,10 +1,18 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
-import { Camera, UserRound, Mail, Save } from "lucide-react";
+import {
+    Camera,
+    UserRound,
+    Mail,
+    Phone,
+    MapPin,
+    Save,
+    Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 
 export default function OwnerProfilePage() {
@@ -12,9 +20,16 @@ export default function OwnerProfilePage() {
     const { data: session, isPending, refetch } = useSession();
 
     const [name, setName] = useState("");
+    const [phoneNumber, setPhoneNumber] = useState("");
+    const [address, setAddress] = useState("");
+
     const [photo, setPhoto] = useState(null);
     const [preview, setPreview] = useState("");
+
     const [saving, setSaving] = useState(false);
+    const [removing, setRemoving] = useState(false);
+
+    const fileInputRef = useRef(null);
 
     useEffect(() => {
         if (!isPending && !session) {
@@ -25,8 +40,10 @@ export default function OwnerProfilePage() {
             router.replace("/");
         }
 
-        if (session) {
+        if (session?.user) {
             setName(session.user.name || "");
+            setPhoneNumber(session.user.phoneNumber || "");
+            setAddress(session.user.address || "");
             setPreview(session.user.image || "");
         }
     }, [session, isPending, router]);
@@ -95,6 +112,8 @@ export default function OwnerProfilePage() {
                     credentials: "include",
                     body: JSON.stringify({
                         name: name.trim(),
+                        phoneNumber: phoneNumber.trim(),
+                        address: address.trim(),
                         ...(photo && { image: imageUrl }),
                     }),
                 }
@@ -113,12 +132,67 @@ export default function OwnerProfilePage() {
             setPhoto(null);
             setPreview(imageUrl);
 
+            if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+            }
+
             toast.success("Profile updated successfully!");
         } catch (error) {
             console.error("Update owner profile error:", error);
             toast.error(error.message || "Failed to update profile!");
         } finally {
             setSaving(false);
+        }
+    };
+
+    // Remove Profile Photo
+    const handleRemovePhoto = async () => {
+        const confirmed = window.confirm(
+            "Are you sure you want to remove your profile photo?"
+        );
+
+        if (!confirmed) return;
+
+        setRemoving(true);
+
+        try {
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/users/me`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    credentials: "include",
+                    body: JSON.stringify({
+                        image: null,
+                    }),
+                }
+            );
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(
+                    data.message || "Failed to remove profile photo!"
+                );
+            }
+
+            await refetch();
+
+            setPhoto(null);
+            setPreview("");
+
+            if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+            }
+
+            toast.success("Profile photo removed successfully!");
+        } catch (error) {
+            console.error("Remove owner photo error:", error);
+            toast.error(error.message || "Failed to remove profile photo!");
+        } finally {
+            setRemoving(false);
         }
     };
 
@@ -130,6 +204,7 @@ export default function OwnerProfilePage() {
                 <h1 className="text-2xl font-bold text-[#142B45]">
                     My Profile
                 </h1>
+
                 <p className="mt-2 text-sm text-gray-500">
                     Manage your personal information and profile details.
                 </p>
@@ -149,7 +224,7 @@ export default function OwnerProfilePage() {
                             />
                         ) : (
                             <div className="flex h-28 w-28 items-center justify-center rounded-full bg-[#142B45] text-3xl font-bold text-white">
-                                {name?.charAt(0).toUpperCase()}
+                                {name?.charAt(0).toUpperCase() || "U"}
                             </div>
                         )}
 
@@ -162,6 +237,7 @@ export default function OwnerProfilePage() {
 
                         <input
                             id="profile-photo"
+                            ref={fileInputRef}
                             type="file"
                             accept="image/png,image/jpeg,image/webp"
                             onChange={handlePhotoChange}
@@ -170,7 +246,7 @@ export default function OwnerProfilePage() {
                     </div>
 
                     <h2 className="mt-4 text-lg font-bold text-[#142B45]">
-                        {session.user.name}
+                        {name || session.user.name}
                     </h2>
 
                     <p className="mt-1 text-sm text-gray-500">
@@ -180,6 +256,35 @@ export default function OwnerProfilePage() {
                     <p className="mt-2 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
                         Owner Account
                     </p>
+
+                    <div className="mt-4 flex flex-wrap justify-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={saving || removing}
+                            className="rounded-lg border border-[#35C77A] px-4 py-2 text-sm font-semibold text-[#35C77A] transition hover:bg-green-50 disabled:opacity-60"
+                        >
+                            Change Photo
+                        </button>
+
+                        {preview && (
+                            <button
+                                type="button"
+                                onClick={handleRemovePhoto}
+                                disabled={saving || removing}
+                                className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-50 disabled:opacity-60"
+                            >
+                                <Trash2 size={16} />
+                                {removing ? "Removing..." : "Remove Photo"}
+                            </button>
+                        )}
+                    </div>
+
+                    {photo && (
+                        <p className="mt-2 text-xs text-gray-500">
+                            New photo selected. Click Save Changes to upload.
+                        </p>
+                    )}
                 </div>
 
                 {/* Profile Form */}
@@ -220,11 +325,43 @@ export default function OwnerProfilePage() {
                         </p>
                     </div>
 
+                    {/* Phone Number */}
+                    <div>
+                        <label className="mb-2 flex items-center gap-2 text-sm font-medium text-[#142B45]">
+                            <Phone size={17} />
+                            Phone Number
+                        </label>
+
+                        <input
+                            type="tel"
+                            value={phoneNumber}
+                            onChange={(e) => setPhoneNumber(e.target.value)}
+                            placeholder="Enter your phone number"
+                            className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-[#35C77A]"
+                        />
+                    </div>
+
+                    {/* Address */}
+                    <div>
+                        <label className="mb-2 flex items-center gap-2 text-sm font-medium text-[#142B45]">
+                            <MapPin size={17} />
+                            Address
+                        </label>
+
+                        <textarea
+                            rows={3}
+                            value={address}
+                            onChange={(e) => setAddress(e.target.value)}
+                            placeholder="Enter your address"
+                            className="w-full resize-none rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-[#35C77A]"
+                        />
+                    </div>
+
                     {/* Save Button */}
                     <div className="flex justify-end border-t border-gray-100 pt-6">
                         <button
                             type="submit"
-                            disabled={saving}
+                            disabled={saving || removing}
                             className="inline-flex items-center gap-2 rounded-lg bg-[#35C77A] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#2db36b] disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             <Save size={17} />
@@ -234,7 +371,6 @@ export default function OwnerProfilePage() {
 
                 </form>
             </div>
-
         </div>
     );
 }
