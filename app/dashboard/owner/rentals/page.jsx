@@ -248,10 +248,25 @@ export default function OwnerRentalsPage() {
                                         {/* Customer Information */}
                                         <td className="px-5 py-4">
                                             <p className="font-semibold text-[#142B45]">
-                                                Customer
+                                                {rental.customer?.name || "N/A"}
+                                            </p>
+                                            <p className="mt-1 text-xs text-gray-500">
+                                                {rental.customer?.email || "N/A"}
                                             </p>
                                             <p className="mt-1 text-xs text-gray-500">
                                                 ID: {rental.customerId}
+                                            </p>
+                                            <p className="mt-2 text-xs text-gray-500">
+                                                Booked:{" "}
+                                                {rental.createdAt
+                                                    ? new Date(rental.createdAt).toLocaleString("en-GB", {
+                                                        day: "2-digit",
+                                                        month: "short",
+                                                        year: "numeric",
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                    })
+                                                    : "N/A"}
                                             </p>
                                         </td>
 
