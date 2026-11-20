@@ -3,10 +3,9 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth-client";
+import { apiFetch } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { ClipboardList, CalendarDays, Wallet } from "lucide-react";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function AllRentalsPage() {
     const router = useRouter();
@@ -34,9 +33,7 @@ export default function AllRentalsPage() {
                 setLoading(true);
                 setError("");
 
-                const response = await fetch(`${API_URL}/rentals/admin`, {
-                    credentials: "include",
-                });
+                const response = await apiFetch("/rentals/admin");
 
                 const data = await response.json();
 
