@@ -1,8 +1,8 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth-client";
+import { apiFetch } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { CalendarDays, ClipboardList } from "lucide-react";
 import { toast } from "sonner";
@@ -30,12 +30,7 @@ export default function OwnerRentalsPage() {
         if (!isPending && session?.user.role === "owner") {
             const fetchRentals = async () => {
                 try {
-                    const res = await fetch(
-                        `${process.env.NEXT_PUBLIC_API_URL}/rentals/owner-rentals`,
-                        {
-                            credentials: "include",
-                        }
-                    );
+                    const res = await apiFetch("/rentals/owner-rentals");
 
                     const data = await res.json();
 
@@ -62,17 +57,13 @@ export default function OwnerRentalsPage() {
         setUpdatingRentalId(id);
 
         try {
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/rentals/${id}/status`,
-                {
-                    method: "PATCH",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    credentials: "include",
-                    body: JSON.stringify({ status }),
-                }
-            );
+            const res = await apiFetch(`/rentals/${id}/status`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ status }),
+            });
 
             const data = await res.json();
 
