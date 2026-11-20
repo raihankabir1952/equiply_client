@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api";
 import {
     Camera,
     UserRound,
@@ -51,168 +52,152 @@ export default function AdminProfilePage() {
 
     // Profile Image Upload
     const handlePhotoChange = async (e) => {
-        const file = e.target.files?.[0];
+    const file = e.target.files?.[0];
 
-        if (!file) return;
+    if (!file) return;
 
-        if (!file.type.startsWith("image/")) {
-            toast.error("Please select a valid image!");
-            return;
+    if (!file.type.startsWith("image/")) {
+        toast.error("Please select a valid image!");
+        return;
+    }
+
+    const localPreview = URL.createObjectURL(file);
+    setPreview(localPreview);
+
+    try {
+        setUploading(true);
+
+        const formData = new FormData();
+        formData.append("image", file);
+
+        // Upload image to ImgBB
+        const uploadRes = await apiFetch("/upload/image", {
+            method: "POST",
+            body: formData,
+        });
+
+        const uploadData = await uploadRes.json();
+
+        if (!uploadRes.ok) {
+            throw new Error(
+                uploadData.message || "Image upload failed!"
+            );
         }
 
-        const localPreview = URL.createObjectURL(file);
-        setPreview(localPreview);
+        // Update profile image
+        const updateRes = await apiFetch("/users/me", {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                image: uploadData.imageUrl,
+            }),
+        });
 
-        try {
-            setUploading(true);
+        const updateData = await updateRes.json();
 
-            const formData = new FormData();
-            formData.append("image", file);
-
-            // Upload image to ImgBB
-            const uploadRes = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/upload/image`,
-                {
-                    method: "POST",
-                    credentials: "include",
-                    body: formData,
-                }
+        if (!updateRes.ok) {
+            throw new Error(
+                updateData.message || "Profile image update failed!"
             );
-
-            const uploadData = await uploadRes.json();
-
-            if (!uploadRes.ok) {
-                throw new Error(
-                    uploadData.message || "Image upload failed!"
-                );
-            }
-
-            // Update profile image
-            const updateRes = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/users/me`,
-                {
-                    method: "PATCH",
-                    credentials: "include",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        image: uploadData.imageUrl,
-                    }),
-                }
-            );
-
-            const updateData = await updateRes.json();
-
-            if (!updateRes.ok) {
-                throw new Error(
-                    updateData.message || "Profile image update failed!"
-                );
-            }
-
-            await refetch();
-
-            setPreview(uploadData.imageUrl);
-            toast.success("Profile photo updated successfully!");
-        } catch (error) {
-            setPreview(session.user.image || "");
-            toast.error(error.message || "Image upload failed!");
-        } finally {
-            URL.revokeObjectURL(localPreview);
-            setUploading(false);
-            e.target.value = "";
         }
-    };
+
+        await refetch();
+
+        setPreview(uploadData.imageUrl);
+        toast.success("Profile photo updated successfully!");
+    } catch (error) {
+        setPreview(session.user.image || "");
+        toast.error(error.message || "Image upload failed!");
+    } finally {
+        URL.revokeObjectURL(localPreview);
+        setUploading(false);
+        e.target.value = "";
+    }
+};
 
     // Remove Profile Image
     const handleRemovePhoto = async () => {
-        const confirmed = window.confirm(
-            "Are you sure you want to remove your profile photo?"
-        );
+    const confirmed = window.confirm(
+        "Are you sure you want to remove your profile photo?"
+    );
 
-        if (!confirmed) return;
+    if (!confirmed) return;
 
-        try {
-            setUploading(true);
+    try {
+        setUploading(true);
 
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/users/me`,
-                {
-                    method: "PATCH",
-                    credentials: "include",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        image: null,
-                    }),
-                }
+        const res = await apiFetch("/users/me", {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                image: null,
+            }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(
+                data.message || "Failed to remove profile photo!"
             );
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(
-                    data.message || "Failed to remove profile photo!"
-                );
-            }
-
-            await refetch();
-
-            setPreview("");
-            toast.success("Profile photo removed successfully!");
-        } catch (error) {
-            toast.error(error.message || "Something went wrong!");
-        } finally {
-            setUploading(false);
         }
-    };
+
+        await refetch();
+
+        setPreview("");
+        toast.success("Profile photo removed successfully!");
+    } catch (error) {
+        toast.error(error.message || "Something went wrong!");
+    } finally {
+        setUploading(false);
+    }
+};
 
     // Update Profile Information
     const handleSubmit = async (e) => {
-        e.preventDefault();
+    e.preventDefault();
 
-        if (!name.trim()) {
-            toast.error("Name cannot be empty!");
-            return;
-        }
+    if (!name.trim()) {
+        toast.error("Name cannot be empty!");
+        return;
+    }
 
-        try {
-            setSaving(true);
+    try {
+        setSaving(true);
 
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/users/me`,
-                {
-                    method: "PATCH",
-                    credentials: "include",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        name: name.trim(),
-                        phoneNumber: phoneNumber.trim(),
-                        address: address.trim(),
-                    }),
-                }
+        const res = await apiFetch("/users/me", {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                name: name.trim(),
+                phoneNumber: phoneNumber.trim(),
+                address: address.trim(),
+            }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(
+                data.message || "Profile update failed!"
             );
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(
-                    data.message || "Profile update failed!"
-                );
-            }
-
-            await refetch();
-
-            toast.success("Profile updated successfully!");
-        } catch (error) {
-            toast.error(error.message || "Something went wrong!");
-        } finally {
-            setSaving(false);
         }
-    };
+
+        await refetch();
+
+        toast.success("Profile updated successfully!");
+    } catch (error) {
+        toast.error(error.message || "Something went wrong!");
+    } finally {
+        setSaving(false);
+    }
+};
 
     return (
         <div className="mx-auto max-w-3xl space-y-6">
