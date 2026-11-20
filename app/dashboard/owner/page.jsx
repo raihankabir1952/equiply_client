@@ -2,6 +2,7 @@
 "use client";
 
 import { useSession } from "@/lib/auth-client";
+import { apiFetch } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
@@ -36,12 +37,7 @@ export default function OwnerDashboard() {
         if (!isPending && session?.user?.role === "owner") {
             const fetchEquipment = async () => {
                 try {
-                    const res = await fetch(
-                        `${process.env.NEXT_PUBLIC_API_URL}/equipment/my-equipment`,
-                        {
-                            credentials: "include",
-                        }
-                    );
+                    const res = await apiFetch("/equipment/my-equipment");
 
                     const data = await res.json();
 
@@ -66,12 +62,7 @@ export default function OwnerDashboard() {
         if (!isPending && session?.user?.role === "owner") {
             const fetchRentals = async () => {
                 try {
-                    const res = await fetch(
-                        `${process.env.NEXT_PUBLIC_API_URL}/rentals/owner-rentals`,
-                        {
-                            credentials: "include",
-                        }
-                    );
+                    const res = await apiFetch("/rentals/owner-rentals");
 
                     const data = await res.json();
 
