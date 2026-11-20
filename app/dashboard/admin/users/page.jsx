@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api";
 import {
     ShieldCheck,
     Users,
@@ -40,12 +41,7 @@ export default function AllUsersPage() {
 
         const fetchUsers = async () => {
             try {
-                const res = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/users`,
-                    {
-                        credentials: "include",
-                    }
-                );
+                const res = await apiFetch("/users");
 
                 const data = await res.json();
 
@@ -98,19 +94,15 @@ export default function AllUsersPage() {
         try {
             setUpdating(user._id);
 
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/users/${user._id}/role`,
-                {
-                    method: "PATCH",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    credentials: "include",
-                    body: JSON.stringify({
-                        role: newRole,
-                    }),
-                }
-            );
+            const res = await apiFetch(`/users/${user._id}/role`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    role: newRole,
+                }),
+            });
 
             const data = await res.json();
 
