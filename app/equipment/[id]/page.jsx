@@ -5,6 +5,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
+import { apiFetch } from "@/lib/api";
 import {
     ArrowLeft,
     MapPin,
@@ -33,12 +34,7 @@ function EquipmentDetailsContent() {
 
         const fetchEquipment = async () => {
             try {
-                const res = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/equipment/${id}`,
-                    {
-                        credentials: "include",
-                    }
-                );
+                const res = await apiFetch(`/equipment/${id}`);
 
                 const data = await res.json();
 
@@ -220,10 +216,9 @@ function EquipmentDetailsContent() {
                 </div>
             </div>
         </main>
-        
     );
-    
 }
+
 export default function EquipmentDetailsPage() {
     return (
         <Suspense

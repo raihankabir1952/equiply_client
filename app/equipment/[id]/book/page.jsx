@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
+import { apiFetch } from "@/lib/api";
 import { toast } from "sonner";
 import {
     ArrowLeft,
@@ -45,12 +46,7 @@ export default function BookingPage() {
 
         const fetchEquipment = async () => {
             try {
-                const res = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/equipment/${id}`,
-                    {
-                        credentials: "include",
-                    }
-                );
+                const res = await apiFetch(`/equipment/${id}`);
 
                 const data = await res.json();
 
@@ -127,25 +123,21 @@ export default function BookingPage() {
 
         try {
             // Create rental
-            const rentalRes = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/rentals`,
-                {
-                    method: "POST",
-                    credentials: "include",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        equipmentId: id,
-                        startDate: formData.startDate,
-                        endDate: formData.endDate,
-                        quantity: Number(formData.quantity),
-                        contactNumber: formData.contactNumber,
-                        address: formData.address,
-                        notes: formData.notes,
-                    }),
-                }
-            );
+            const rentalRes = await apiFetch("/rentals", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    equipmentId: id,
+                    startDate: formData.startDate,
+                    endDate: formData.endDate,
+                    quantity: Number(formData.quantity),
+                    contactNumber: formData.contactNumber,
+                    address: formData.address,
+                    notes: formData.notes,
+                }),
+            });
 
             const rentalData = await rentalRes.json();
 
@@ -158,11 +150,10 @@ export default function BookingPage() {
             toast.success("Booking created successfully!");
 
             // Create Stripe Checkout Session
-            const paymentRes = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/payments/create-checkout-session`,
+            const paymentRes = await apiFetch(
+                "/payments/create-checkout-session",
                 {
                     method: "POST",
-                    credentials: "include",
                     headers: {
                         "Content-Type": "application/json",
                     },
