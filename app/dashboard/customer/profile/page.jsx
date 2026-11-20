@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "@/lib/auth-client";
+import { apiFetch } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
@@ -48,21 +49,17 @@ export default function CustomerProfilePage() {
         try {
             setSaving(true);
 
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/users/me`,
-                {
-                    method: "PATCH",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    credentials: "include",
-                    body: JSON.stringify({
-                        name: name.trim(),
-                        phoneNumber: phoneNumber.trim(),
-                        address: address.trim(),
-                    }),
-                }
-            );
+            const res = await apiFetch("/users/me", {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    name: name.trim(),
+                    phoneNumber: phoneNumber.trim(),
+                    address: address.trim(),
+                }),
+            });
 
             const data = await res.json();
 
@@ -74,7 +71,7 @@ export default function CustomerProfilePage() {
             }
         } catch (error) {
             console.error("Profile update error:", error);
-            toast.error("Something went wrong!");
+            toast.error(error.message || "Something went wrong!");
         } finally {
             setSaving(false);
         }
@@ -89,14 +86,10 @@ export default function CustomerProfilePage() {
             const formData = new FormData();
             formData.append("image", file);
 
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/upload/image`,
-                {
-                    method: "POST",
-                    credentials: "include",
-                    body: formData,
-                }
-            );
+            const res = await apiFetch("/upload/image", {
+                method: "POST",
+                body: formData,
+            });
 
             const data = await res.json();
 
@@ -105,19 +98,15 @@ export default function CustomerProfilePage() {
                 return;
             }
 
-            const updateRes = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/users/me`,
-                {
-                    method: "PATCH",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    credentials: "include",
-                    body: JSON.stringify({
-                        image: data.imageUrl,
-                    }),
-                }
-            );
+            const updateRes = await apiFetch("/users/me", {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    image: data.imageUrl,
+                }),
+            });
 
             const updateData = await updateRes.json();
 
@@ -131,7 +120,7 @@ export default function CustomerProfilePage() {
             }
         } catch (error) {
             console.error("Image upload error:", error);
-            toast.error("Something went wrong!");
+            toast.error(error.message || "Something went wrong!");
         } finally {
             setUploading(false);
 
@@ -151,19 +140,15 @@ export default function CustomerProfilePage() {
         try {
             setRemoving(true);
 
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/users/me`,
-                {
-                    method: "PATCH",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    credentials: "include",
-                    body: JSON.stringify({
-                        image: null,
-                    }),
-                }
-            );
+            const res = await apiFetch("/users/me", {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    image: null,
+                }),
+            });
 
             const data = await res.json();
 
@@ -177,7 +162,7 @@ export default function CustomerProfilePage() {
             }
         } catch (error) {
             console.error("Remove photo error:", error);
-            toast.error("Something went wrong!");
+            toast.error(error.message || "Something went wrong!");
         } finally {
             setRemoving(false);
         }
