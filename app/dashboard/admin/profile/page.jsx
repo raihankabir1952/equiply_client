@@ -10,6 +10,9 @@ import {
     Mail,
     Save,
     ShieldCheck,
+    Phone,
+    MapPin,
+    Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -18,7 +21,10 @@ export default function AdminProfilePage() {
     const { data: session, isPending, refetch } = useSession();
 
     const [name, setName] = useState("");
+    const [phoneNumber, setPhoneNumber] = useState("");
+    const [address, setAddress] = useState("");
     const [preview, setPreview] = useState("");
+
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
 
@@ -33,6 +39,8 @@ export default function AdminProfilePage() {
 
         if (session) {
             setName(session.user.name || "");
+            setPhoneNumber(session.user.phoneNumber || "");
+            setAddress(session.user.address || "");
             setPreview(session.user.image || "");
         }
     }, [session, isPending, router]);
@@ -74,10 +82,12 @@ export default function AdminProfilePage() {
             const uploadData = await uploadRes.json();
 
             if (!uploadRes.ok) {
-                throw new Error(uploadData.message || "Image upload failed!");
+                throw new Error(
+                    uploadData.message || "Image upload failed!"
+                );
             }
 
-            // Update profile image in Better Auth
+            // Update profile image
             const updateRes = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/users/me`,
                 {
@@ -95,7 +105,9 @@ export default function AdminProfilePage() {
             const updateData = await updateRes.json();
 
             if (!updateRes.ok) {
-                throw new Error(updateData.message || "Profile image update failed!");
+                throw new Error(
+                    updateData.message || "Profile image update failed!"
+                );
             }
 
             await refetch();
@@ -112,7 +124,51 @@ export default function AdminProfilePage() {
         }
     };
 
-    // Update Profile Name
+    // Remove Profile Image
+    const handleRemovePhoto = async () => {
+        const confirmed = window.confirm(
+            "Are you sure you want to remove your profile photo?"
+        );
+
+        if (!confirmed) return;
+
+        try {
+            setUploading(true);
+
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/users/me`,
+                {
+                    method: "PATCH",
+                    credentials: "include",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        image: null,
+                    }),
+                }
+            );
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(
+                    data.message || "Failed to remove profile photo!"
+                );
+            }
+
+            await refetch();
+
+            setPreview("");
+            toast.success("Profile photo removed successfully!");
+        } catch (error) {
+            toast.error(error.message || "Something went wrong!");
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    // Update Profile Information
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -134,6 +190,8 @@ export default function AdminProfilePage() {
                     },
                     body: JSON.stringify({
                         name: name.trim(),
+                        phoneNumber: phoneNumber.trim(),
+                        address: address.trim(),
                     }),
                 }
             );
@@ -141,7 +199,9 @@ export default function AdminProfilePage() {
             const data = await res.json();
 
             if (!res.ok) {
-                throw new Error(data.message || "Profile update failed!");
+                throw new Error(
+                    data.message || "Profile update failed!"
+                );
             }
 
             await refetch();
@@ -162,6 +222,7 @@ export default function AdminProfilePage() {
                 <h1 className="text-2xl font-bold text-[#142B45]">
                     My Profile
                 </h1>
+
                 <p className="mt-2 text-sm text-gray-500">
                     Manage your administrator account information.
                 </p>
@@ -172,6 +233,7 @@ export default function AdminProfilePage() {
 
                 {/* Profile Image */}
                 <div className="flex flex-col items-center border-b border-gray-100 pb-8">
+
                     <div className="relative">
                         {preview ? (
                             <img
@@ -206,6 +268,19 @@ export default function AdminProfilePage() {
                         />
                     </div>
 
+                    {/* Remove Photo Button */}
+                    {preview && (
+                        <button
+                            type="button"
+                            onClick={handleRemovePhoto}
+                            disabled={uploading}
+                            className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-red-500 transition hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <Trash2 size={14} />
+                            Remove Photo
+                        </button>
+                    )}
+
                     <h2 className="mt-4 text-lg font-bold text-[#142B45]">
                         {session.user.name}
                     </h2>
@@ -221,7 +296,7 @@ export default function AdminProfilePage() {
 
                     {uploading && (
                         <p className="mt-3 text-xs text-gray-500">
-                            Uploading profile photo...
+                            Please wait...
                         </p>
                     )}
                 </div>
@@ -241,6 +316,38 @@ export default function AdminProfilePage() {
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             placeholder="Enter your full name"
+                            className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-[#35C77A]"
+                        />
+                    </div>
+
+                    {/* Phone Number */}
+                    <div>
+                        <label className="mb-2 flex items-center gap-2 text-sm font-medium text-[#142B45]">
+                            <Phone size={17} />
+                            Phone Number
+                        </label>
+
+                        <input
+                            type="tel"
+                            value={phoneNumber}
+                            onChange={(e) => setPhoneNumber(e.target.value)}
+                            placeholder="Enter your phone number"
+                            className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-[#35C77A]"
+                        />
+                    </div>
+
+                    {/* Address */}
+                    <div>
+                        <label className="mb-2 flex items-center gap-2 text-sm font-medium text-[#142B45]">
+                            <MapPin size={17} />
+                            Address
+                        </label>
+
+                        <textarea
+                            value={address}
+                            onChange={(e) => setAddress(e.target.value)}
+                            placeholder="Enter your address"
+                            rows={3}
                             className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-[#35C77A]"
                         />
                     </div>
@@ -278,7 +385,6 @@ export default function AdminProfilePage() {
 
                 </form>
             </div>
-
         </div>
     );
 }
