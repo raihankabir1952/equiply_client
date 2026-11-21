@@ -56,23 +56,22 @@ export default function MyEquipmentPage() {
 
     // Fetch Owner Equipment
     const fetchEquipment = async () => {
-    try {
-        const res = await apiFetch("/equipment/my-equipment");
+        try {
+            const res = await apiFetch("/equipment/my-equipment");
+            const data = await res.json();
 
-        const data = await res.json();
-
-        if (res.ok) {
-            setEquipment(data.equipment || []);
-        } else {
-            toast.error(data.message || "Failed to load equipment.");
+            if (res.ok) {
+                setEquipment(data.equipment || []);
+            } else {
+                toast.error(data.message || "Failed to load equipment.");
+            }
+        } catch (error) {
+            console.error("Equipment fetch error:", error);
+            toast.error("Failed to fetch equipment.");
+        } finally {
+            setLoading(false);
         }
-    } catch (error) {
-        console.error("Equipment fetch error:", error);
-        toast.error("Failed to fetch equipment.");
-    } finally {
-        setLoading(false);
-    }
-};
+    };
 
     useEffect(() => {
         if (!isPending && session?.user?.role === "owner") {
@@ -110,74 +109,74 @@ export default function MyEquipmentPage() {
 
     // Update Equipment
     const handleUpdate = async (e) => {
-    e.preventDefault();
+        e.preventDefault();
 
-    if (!selectedEquipment) return;
+        if (!selectedEquipment) return;
 
-    setUpdating(true);
+        setUpdating(true);
 
-    try {
-        let imageUrl = selectedEquipment.image;
+        try {
+            let imageUrl = selectedEquipment.image;
 
-        // Upload New Image if Selected
-        if (newImage) {
-            const imageData = new FormData();
-            imageData.append("image", newImage);
+            // Upload New Image if Selected
+            if (newImage) {
+                const imageData = new FormData();
+                imageData.append("image", newImage);
 
-            const uploadRes = await apiFetch("/upload/image", {
-                method: "POST",
-                body: imageData,
-            });
+                const uploadRes = await apiFetch("/upload/image", {
+                    method: "POST",
+                    body: imageData,
+                });
 
-            const uploadResult = await uploadRes.json();
+                const uploadResult = await uploadRes.json();
 
-            if (!uploadRes.ok) {
-                throw new Error(
-                    uploadResult.message || "Image upload failed!"
-                );
+                if (!uploadRes.ok) {
+                    throw new Error(
+                        uploadResult.message || "Image upload failed!"
+                    );
+                }
+
+                imageUrl = uploadResult.imageUrl;
             }
 
-            imageUrl = uploadResult.imageUrl;
-        }
+            // Update Equipment API
+            const res = await apiFetch(
+                `/equipment/${selectedEquipment._id}`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        ...formData,
+                        image: imageUrl,
+                        price: Number(formData.price),
+                        availableQuantity: Number(
+                            formData.availableQuantity
+                        ),
+                    }),
+                }
+            );
 
-        // Update Equipment API
-        const res = await apiFetch(
-            `/equipment/${selectedEquipment._id}`,
-            {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    ...formData,
-                    image: imageUrl,
-                    price: Number(formData.price),
-                    availableQuantity: Number(
-                        formData.availableQuantity
-                    ),
-                }),
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.message || "Equipment update failed!");
             }
-        );
 
-        const data = await res.json();
+            toast.success("Equipment updated successfully!");
 
-        if (!res.ok) {
-            throw new Error(data.message || "Equipment update failed!");
+            setSelectedEquipment(null);
+            setNewImage(null);
+
+            await fetchEquipment();
+        } catch (error) {
+            console.error("Update equipment error:", error);
+            toast.error(error.message || "Failed to update equipment.");
+        } finally {
+            setUpdating(false);
         }
-
-        toast.success("Equipment updated successfully!");
-
-        setSelectedEquipment(null);
-        setNewImage(null);
-
-        await fetchEquipment();
-    } catch (error) {
-        console.error("Update equipment error:", error);
-        toast.error(error.message || "Failed to update equipment.");
-    } finally {
-        setUpdating(false);
-    }
-};
+    };
 
     // View Equipment Details
     const handleView = (item) => {
@@ -186,35 +185,35 @@ export default function MyEquipmentPage() {
 
     // Delete Equipment
     const handleDelete = async (id) => {
-    const confirmed = window.confirm(
-        "Are you sure you want to delete this equipment?"
-    );
+        const confirmed = window.confirm(
+            "Are you sure you want to delete this equipment?"
+        );
 
-    if (!confirmed) return;
+        if (!confirmed) return;
 
-    setDeleting(true);
+        setDeleting(true);
 
-    try {
-        const res = await apiFetch(`/equipment/${id}`, {
-            method: "DELETE",
-        });
+        try {
+            const res = await apiFetch(`/equipment/${id}`, {
+                method: "DELETE",
+            });
 
-        const data = await res.json();
+            const data = await res.json();
 
-        if (!res.ok) {
-            throw new Error(data.message || "Failed to delete equipment!");
+            if (!res.ok) {
+                throw new Error(data.message || "Failed to delete equipment!");
+            }
+
+            toast.success("Equipment deleted successfully!");
+
+            await fetchEquipment();
+        } catch (error) {
+            console.error("Delete equipment error:", error);
+            toast.error(error.message || "Failed to delete equipment.");
+        } finally {
+            setDeleting(false);
         }
-
-        toast.success("Equipment deleted successfully!");
-
-        await fetchEquipment();
-    } catch (error) {
-        console.error("Delete equipment error:", error);
-        toast.error(error.message || "Failed to delete equipment.");
-    } finally {
-        setDeleting(false);
-    }
-};
+    };
 
     if (isPending || !session) {
         return <p>Loading...</p>;
@@ -247,7 +246,7 @@ export default function MyEquipmentPage() {
             {/* Equipment Table */}
             <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
                 <div className="overflow-x-auto">
-                    <table className="w-full min-w-[850px] text-left">
+                    <table className="w-full min-w-[1100px] text-left">
 
                         <thead className="bg-gray-50">
                             <tr className="text-sm text-gray-600">
@@ -264,7 +263,15 @@ export default function MyEquipmentPage() {
                                 </th>
 
                                 <th className="px-6 py-4 font-semibold">
-                                    Available Quantity
+                                    Total Stock
+                                </th>
+
+                                <th className="px-6 py-4 font-semibold">
+                                    Available Today
+                                </th>
+
+                                <th className="px-6 py-4 font-semibold">
+                                    Booked Today
                                 </th>
 
                                 <th className="px-6 py-4 font-semibold">
@@ -281,13 +288,13 @@ export default function MyEquipmentPage() {
 
                             {loading ? (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-10 text-center text-sm text-gray-500">
+                                    <td colSpan="8" className="px-6 py-10 text-center text-sm text-gray-500">
                                         Loading equipment...
                                     </td>
                                 </tr>
                             ) : equipment.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-10 text-center text-sm text-gray-500">
+                                    <td colSpan="8" className="px-6 py-10 text-center text-sm text-gray-500">
                                         No equipment found. Add your first equipment!
                                     </td>
                                 </tr>
@@ -312,20 +319,29 @@ export default function MyEquipmentPage() {
                                             </span>
                                         </td>
 
-                                        <td className="px-6 py-4 text-gray-600">
+                                        <td className="px-6 py-4 font-semibold text-[#142B45]">
                                             {item.availableQuantity}
+                                        </td>
+
+                                        <td className="px-6 py-4 font-semibold text-green-600">
+                                            {item.availableToday ?? "N/A"}
+                                        </td>
+
+                                        <td className="px-6 py-4 font-semibold text-orange-600">
+                                            {item.bookedToday ?? "N/A"}
                                         </td>
 
                                         <td className="px-6 py-4">
                                             <span
-                                                className={`rounded-full px-3 py-1 text-xs font-semibold ${item.status === "approved"
+                                                className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                                                    item.status === "approved"
                                                         ? "bg-green-50 text-green-700"
                                                         : item.status === "pending"
                                                             ? "bg-yellow-50 text-yellow-700"
                                                             : item.status === "rejected"
                                                                 ? "bg-red-50 text-red-700"
                                                                 : "bg-gray-100 text-gray-600"
-                                                    }`}
+                                                }`}
                                             >
                                                 {item.status?.charAt(0).toUpperCase() +
                                                     item.status?.slice(1)}
@@ -447,12 +463,33 @@ export default function MyEquipmentPage() {
                                         </p>
                                     </div>
 
+                                    {/* Total Stock */}
                                     <div className="rounded-lg bg-gray-50 p-4">
                                         <p className="text-xs text-gray-500">
-                                            Available Quantity
+                                            Total Stock
                                         </p>
-                                        <p className="mt-1 font-semibold text-[#142B45]">
+                                        <p className="mt-1 text-xl font-bold text-[#142B45]">
                                             {viewEquipment.availableQuantity}
+                                        </p>
+                                    </div>
+
+                                    {/* Available Today */}
+                                    <div className="rounded-lg bg-green-50 p-4">
+                                        <p className="text-xs text-green-700">
+                                            Available Today
+                                        </p>
+                                        <p className="mt-1 text-xl font-bold text-green-700">
+                                            {viewEquipment.availableToday ?? "N/A"}
+                                        </p>
+                                    </div>
+
+                                    {/* Booked Today */}
+                                    <div className="rounded-lg bg-orange-50 p-4">
+                                        <p className="text-xs text-orange-700">
+                                            Booked Today
+                                        </p>
+                                        <p className="mt-1 text-xl font-bold text-orange-700">
+                                            {viewEquipment.bookedToday ?? "N/A"}
                                         </p>
                                     </div>
 
@@ -637,7 +674,7 @@ export default function MyEquipmentPage() {
 
                                 <div>
                                     <label className="mb-2 block text-sm font-semibold text-[#142B45]">
-                                        Available Quantity
+                                        Total Stock
                                     </label>
 
                                     <input
@@ -649,6 +686,10 @@ export default function MyEquipmentPage() {
                                         required
                                         className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#35C77A]"
                                     />
+
+                                    <p className="mt-1 text-xs text-gray-400">
+                                        Enter your total equipment stock.
+                                    </p>
                                 </div>
                             </div>
 

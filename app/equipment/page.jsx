@@ -29,7 +29,6 @@ export default function EquipmentPage() {
     const [categories, setCategories] = useState([]);
     const [urlInitialized, setUrlInitialized] = useState(false);
 
-    // Favorite states
     const [favoriteIds, setFavoriteIds] = useState([]);
     const [favoriteLoading, setFavoriteLoading] = useState([]);
 
@@ -230,7 +229,6 @@ export default function EquipmentPage() {
 
     return (
         <main className="min-h-screen bg-slate-50 pb-20">
-
             {/* Hero Section */}
             <section className="bg-[#142B45] px-5 py-20 text-center">
                 <div className="mx-auto max-w-3xl">
@@ -253,19 +251,19 @@ export default function EquipmentPage() {
             </section>
 
             <div className="mx-auto max-w-7xl px-5 pt-12 lg:px-8">
-
                 {/* Search & Filters */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
-
                     <div className="mb-6 flex items-center gap-2">
-                        <SlidersHorizontal size={20} className="text-[#35C77A]" />
+                        <SlidersHorizontal
+                            size={20}
+                            className="text-[#35C77A]"
+                        />
                         <h2 className="text-lg font-bold text-[#142B45]">
                             Find Equipment
                         </h2>
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
-
                         {/* Search */}
                         <div className="relative lg:col-span-2">
                             <Search
@@ -331,7 +329,6 @@ export default function EquipmentPage() {
 
                     {/* Sorting & Reset */}
                     <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 pt-5">
-
                         <p className="text-sm text-slate-500">
                             {loading
                                 ? "Finding equipment..."
@@ -345,8 +342,12 @@ export default function EquipmentPage() {
                                 className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-[#35C77A]"
                             >
                                 <option value="newest">Newest First</option>
-                                <option value="price_asc">Price: Low to High</option>
-                                <option value="price_desc">Price: High to Low</option>
+                                <option value="price_asc">
+                                    Price: Low to High
+                                </option>
+                                <option value="price_desc">
+                                    Price: High to Low
+                                </option>
                             </select>
 
                             <button
@@ -361,7 +362,6 @@ export default function EquipmentPage() {
 
                 {/* Equipment Cards */}
                 <div className="mt-10">
-
                     {loading ? (
                         <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
                             {[1, 2, 3, 4, 5, 6].map((item) => (
@@ -401,11 +401,26 @@ export default function EquipmentPage() {
                         </div>
                     ) : (
                         <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
-
                             {equipment.map((item) => {
+                                const equipmentId = String(item._id);
                                 const isFavorite = favoriteIds.includes(
-                                    String(item._id)
+                                    equipmentId
                                 );
+
+                                const availableToday = Number(
+                                    item.availableToday ?? 0
+                                );
+
+                                const bookedToday = Number(
+                                    item.bookedToday ?? 0
+                                );
+
+                                const totalStock = Number(
+                                    item.availableQuantity ?? 0
+                                );
+
+                                const isAvailableToday =
+                                    availableToday > 0 && item.isAvailable !== false;
 
                                 return (
                                     <div
@@ -414,7 +429,6 @@ export default function EquipmentPage() {
                                     >
                                         {/* Image */}
                                         <div className="relative h-56 overflow-hidden bg-slate-100">
-
                                             <img
                                                 src={item.image}
                                                 alt={item.name}
@@ -425,21 +439,33 @@ export default function EquipmentPage() {
                                                 {item.category}
                                             </span>
 
-                                            <span className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-[#35C77A] px-3 py-1.5 text-xs font-bold text-[#142B45] shadow-sm">
-                                                <span className="h-1.5 w-1.5 rounded-full bg-[#142B45]" />
-                                                {item.isAvailable
-                                                    ? "Available"
-                                                    : "Unavailable"}
+                                            <span
+                                                className={`absolute right-4 top-4 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold shadow-sm ${
+                                                    isAvailableToday
+                                                        ? "bg-[#35C77A] text-[#142B45]"
+                                                        : "bg-red-100 text-red-700"
+                                                }`}
+                                            >
+                                                <span
+                                                    className={`h-1.5 w-1.5 rounded-full ${
+                                                        isAvailableToday
+                                                            ? "bg-[#142B45]"
+                                                            : "bg-red-600"
+                                                    }`}
+                                                />
+                                                {isAvailableToday
+                                                    ? "Available Today"
+                                                    : "Unavailable Today"}
                                             </span>
 
                                             {/* Favorite Button */}
                                             <button
                                                 type="button"
                                                 onClick={() =>
-                                                    toggleFavorite(String(item._id))
+                                                    toggleFavorite(equipmentId)
                                                 }
                                                 disabled={favoriteLoading.includes(
-                                                    String(item._id)
+                                                    equipmentId
                                                 )}
                                                 aria-label={
                                                     isFavorite
@@ -474,7 +500,6 @@ export default function EquipmentPage() {
 
                                         {/* Card Content */}
                                         <div className="p-5">
-
                                             <div className="flex items-center gap-1.5 text-sm text-slate-500">
                                                 <MapPin
                                                     size={15}
@@ -487,6 +512,36 @@ export default function EquipmentPage() {
                                                 {item.name}
                                             </h3>
 
+                                            {/* Quantity Information */}
+                                            <div className="mt-4 grid grid-cols-3 gap-2 rounded-xl bg-slate-50 p-3">
+                                                <div>
+                                                    <p className="text-[11px] font-medium text-slate-500">
+                                                        Total Stock
+                                                    </p>
+                                                    <p className="mt-1 text-lg font-bold text-[#142B45]">
+                                                        {totalStock}
+                                                    </p>
+                                                </div>
+
+                                                <div>
+                                                    <p className="text-[11px] font-medium text-slate-500">
+                                                        Available Today
+                                                    </p>
+                                                    <p className="mt-1 text-lg font-bold text-[#229c5b]">
+                                                        {availableToday}
+                                                    </p>
+                                                </div>
+
+                                                <div>
+                                                    <p className="text-[11px] font-medium text-slate-500">
+                                                        Booked Today
+                                                    </p>
+                                                    <p className="mt-1 text-lg font-bold text-orange-600">
+                                                        {bookedToday}
+                                                    </p>
+                                                </div>
+                                            </div>
+
                                             <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
                                                 <div>
                                                     <p className="text-xs font-medium text-slate-400">
@@ -495,7 +550,9 @@ export default function EquipmentPage() {
 
                                                     <div className="mt-1 flex items-baseline gap-1">
                                                         <span className="text-2xl font-extrabold text-[#142B45]">
-                                                            ৳{Number(item.price).toLocaleString("en-BD")}
+                                                            ৳{Number(
+                                                                item.price
+                                                            ).toLocaleString("en-BD")}
                                                         </span>
 
                                                         <span className="text-xs text-slate-500">
@@ -516,7 +573,6 @@ export default function EquipmentPage() {
                                     </div>
                                 );
                             })}
-
                         </div>
                     )}
                 </div>

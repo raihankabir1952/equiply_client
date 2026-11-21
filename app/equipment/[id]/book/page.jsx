@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -26,6 +25,9 @@ export default function BookingPage() {
     const [loading, setLoading] = useState(true);
     const [booking, setBooking] = useState(false);
 
+    const [availableQuantity, setAvailableQuantity] = useState(null);
+    const [checkingAvailability, setCheckingAvailability] = useState(false);
+
     const [formData, setFormData] = useState({
         startDate: "",
         endDate: "",
@@ -47,7 +49,6 @@ export default function BookingPage() {
         const fetchEquipment = async () => {
             try {
                 const res = await apiFetch(`/equipment/${id}`);
-
                 const data = await res.json();
 
                 if (!res.ok) {
@@ -66,6 +67,71 @@ export default function BookingPage() {
 
         fetchEquipment();
     }, [id, session, isPending, router]);
+
+    // Fetch availability for selected dates
+    useEffect(() => {
+        if (!formData.startDate || !formData.endDate) {
+            setAvailableQuantity(null);
+            return;
+        }
+
+        if (new Date(formData.endDate) <= new Date(formData.startDate)) {
+            setAvailableQuantity(null);
+            return;
+        }
+
+        let cancelled = false;
+
+        const fetchAvailability = async () => {
+            setCheckingAvailability(true);
+
+            try {
+                const params = new URLSearchParams({
+                    startDate: formData.startDate,
+                    endDate: formData.endDate,
+                });
+
+                const res = await apiFetch(
+                    `/equipment/${id}/availability?${params.toString()}`
+                );
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(
+                        data.message || "Failed to check availability!"
+                    );
+                }
+
+                if (!cancelled) {
+                    setAvailableQuantity(data.availableQuantity);
+
+                    setFormData((previous) => ({
+                        ...previous,
+                        quantity: Math.min(
+                            Number(previous.quantity),
+                            data.availableQuantity
+                        ) || (data.availableQuantity > 0 ? 1 : 0),
+                    }));
+                }
+            } catch (error) {
+                if (!cancelled) {
+                    setAvailableQuantity(null);
+                    toast.error(error.message);
+                }
+            } finally {
+                if (!cancelled) {
+                    setCheckingAvailability(false);
+                }
+            }
+        };
+
+        fetchAvailability();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [id, formData.startDate, formData.endDate]);
 
     // Handle input changes
     const handleChange = (e) => {
@@ -107,11 +173,18 @@ export default function BookingPage() {
             return toast.error("End date must be after start date!");
         }
 
-        if (Number(formData.quantity) < 1) {
-            return toast.error("Quantity must be at least 1!");
+        if (checkingAvailability || availableQuantity === null) {
+            return toast.error("Please wait for availability check!");
         }
 
-        if (Number(formData.quantity) > equipment.availableQuantity) {
+        if (availableQuantity <= 0) {
+            return toast.error("No equipment available for selected dates!");
+        }
+
+        if (
+            Number(formData.quantity) < 1 ||
+            Number(formData.quantity) > availableQuantity
+        ) {
             return toast.error("Requested quantity is not available!");
         }
 
@@ -122,7 +195,6 @@ export default function BookingPage() {
         setBooking(true);
 
         try {
-            // Create rental
             const rentalRes = await apiFetch("/rentals", {
                 method: "POST",
                 headers: {
@@ -207,10 +279,18 @@ export default function BookingPage() {
 
     const today = new Date().toLocaleDateString("en-CA");
 
+    const isAvailabilityReady =
+        availableQuantity !== null && !checkingAvailability;
+
+    const canBook =
+        isAvailabilityReady &&
+        availableQuantity > 0 &&
+        Number(formData.quantity) >= 1 &&
+        Number(formData.quantity) <= availableQuantity;
+
     return (
         <main className="min-h-screen bg-slate-50 py-12">
             <div className="mx-auto max-w-6xl px-5 lg:px-8">
-
                 <Link
                     href={`/equipment/${id}`}
                     className="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-[#142B45] hover:text-[#229c5b]"
@@ -229,7 +309,6 @@ export default function BookingPage() {
                 </div>
 
                 <div className="grid gap-8 lg:grid-cols-3">
-
                     {/* Booking Form */}
                     <div className="lg:col-span-2">
                         <form
@@ -277,23 +356,39 @@ export default function BookingPage() {
                                 </div>
                             </div>
 
+                            {/* Quantity */}
                             <div>
                                 <label className="mb-2 block text-sm font-semibold text-[#142B45]">
                                     Quantity *
                                 </label>
+
                                 <input
                                     type="number"
                                     name="quantity"
                                     min="1"
-                                    max={equipment.availableQuantity}
+                                    max={availableQuantity ?? 0}
                                     value={formData.quantity}
                                     onChange={handleChange}
+                                    disabled={!isAvailabilityReady || availableQuantity <= 0}
                                     required
-                                    className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#35C77A]"
+                                    className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#35C77A] disabled:cursor-not-allowed disabled:bg-slate-100"
                                 />
-                                <p className="mt-1 text-xs text-slate-500">
-                                    Available quantity: {equipment.availableQuantity}
+
+                                <p className="mt-2 text-xs text-slate-500">
+                                    {!formData.startDate || !formData.endDate
+                                        ? "Select rental dates to check availability."
+                                        : checkingAvailability
+                                        ? "Checking availability..."
+                                        : availableQuantity === null
+                                        ? "Unable to check availability."
+                                        : `Available quantity for selected dates: ${availableQuantity}`}
                                 </p>
+
+                                {isAvailabilityReady && availableQuantity === 0 && (
+                                    <p className="mt-2 text-sm font-semibold text-red-600">
+                                        No equipment available for these dates.
+                                    </p>
+                                )}
                             </div>
 
                             <div className="border-t border-slate-100 pt-6">
@@ -350,7 +445,10 @@ export default function BookingPage() {
 
                             <button
                                 type="submit"
-                                disabled={booking || equipment.availableQuantity <= 0}
+                                disabled={
+                                    booking ||
+                                    !canBook
+                                }
                                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#35C77A] px-6 py-4 font-bold text-[#142B45] transition hover:bg-[#2db36b] disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {booking ? (
@@ -358,6 +456,10 @@ export default function BookingPage() {
                                         <Loader2 size={19} className="animate-spin" />
                                         Processing...
                                     </>
+                                ) : checkingAvailability ? (
+                                    "Checking Availability..."
+                                ) : availableQuantity === 0 ? (
+                                    "Currently Unavailable"
                                 ) : (
                                     <>
                                         <CreditCard size={19} />
@@ -417,6 +519,17 @@ export default function BookingPage() {
                                         {formData.quantity}
                                     </span>
                                 </div>
+
+                                {isAvailabilityReady && (
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-500">
+                                            Available Quantity
+                                        </span>
+                                        <span className="font-semibold text-green-700">
+                                            {availableQuantity}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-5">
@@ -439,7 +552,6 @@ export default function BookingPage() {
                             </div>
                         </div>
                     </div>
-
                 </div>
             </div>
         </main>
