@@ -11,6 +11,9 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
+  Copy,
+  Check,
+  ShieldCheck,
 } from "lucide-react";
 import { signIn } from "@/lib/auth-client";
 import { toast } from "sonner";
@@ -23,6 +26,18 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [emailCopied, setEmailCopied] = useState(false);
+
+  const handleCopyDemoEmail = async () => {
+    try {
+      await navigator.clipboard.writeText("admin@gmail.com");
+      setEmailCopied(true);
+      toast.success("Demo admin email copied.");
+    } catch (error) {
+      console.error("Copy demo admin email error:", error);
+      toast.error("Unable to copy the demo admin email.");
+    }
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -234,6 +249,60 @@ export default function LoginPage() {
                 {!loading && <ArrowRight size={18} />}
               </button>
             </form>
+
+            <section
+              aria-labelledby="demo-admin-title"
+              className="mt-6 rounded-2xl border border-[#35C77A]/20 bg-[#35C77A]/[0.04] p-4 sm:p-5 dark:border-[#35C77A]/25 dark:bg-[#35C77A]/[0.06]"
+            >
+              <div className="mb-4 flex items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#35C77A]/10 text-[#23995A] dark:text-[#35C77A]">
+                  <ShieldCheck size={20} />
+                </span>
+                <h2
+                  id="demo-admin-title"
+                  className="text-base font-semibold text-[#142B45] dark:text-[#e8eef8]"
+                >
+                  Try Demo Admin
+                </h2>
+              </div>
+
+              <div className="space-y-3 rounded-xl border border-slate-200/80 bg-white/80 p-3 sm:p-4 dark:border-[#31415e] dark:bg-[#111a2b]/80">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-slate-500 dark:text-[#aebccf]">
+                      Email
+                    </p>
+                    <a
+                      href="mailto:admin@gmail.com"
+                      className="break-all text-sm font-semibold text-[#142B45] hover:underline dark:text-[#e8eef8]"
+                    >
+                      admin@gmail.com
+                    </a>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCopyDemoEmail}
+                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-[#142B45] transition hover:border-[#35C77A]/50 hover:bg-[#35C77A]/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#35C77A] dark:border-[#31415e] dark:text-[#e8eef8] dark:hover:bg-[#35C77A]/10"
+                    aria-label="Copy demo admin email"
+                  >
+                    {emailCopied ? <Check size={14} /> : <Copy size={14} />}
+                    {emailCopied ? "Copied" : "Copy"}
+                  </button>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-slate-500 dark:text-[#aebccf]">
+                    Password
+                  </p>
+                  <p className="text-sm font-semibold text-[#142B45] dark:text-[#e8eef8]">
+                    Pp1234
+                  </p>
+                </div>
+              </div>
+
+              <p className="mt-3 text-xs leading-5 text-slate-500 dark:text-[#aebccf]">
+                Use the demo admin account to explore the admin dashboard.
+              </p>
+            </section>
 
             <p className="mt-7 text-center text-sm text-slate-500">
               Don&apos;t have an account?{" "}

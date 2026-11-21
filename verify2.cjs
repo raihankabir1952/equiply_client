@@ -1,0 +1,12 @@
+﻿const fs=require('fs'),path=require('path');
+const dir='.next/static/chunks';
+const files=fs.readdirSync(dir).filter(f=>f.endsWith('.css'));
+let all=''; for(const f of files) all+=fs.readFileSync(path.join(dir,f),'utf8');
+console.log('bytes',all.length);
+const iDark=all.indexOf('.dark .bg-white');
+const iLayer=all.indexOf('@layer utilities');
+const iTheme=all.indexOf('theme-icon-dark');
+console.log('dark rule index',iDark,'layer index',iLayer,'theme-icon',iTheme);
+console.log(all.slice(iDark-60,iDark+120));
+const iB=all.indexOf('dark\\:block'); console.log('dark:block ->', iB>=0?JSON.stringify(all.slice(iB-40,iB+90)):'MISSING');
+const iH=all.indexOf('dark\\:hidden'); console.log('dark:hidden ->', iH>=0?JSON.stringify(all.slice(iH-40,iH+90)):'MISSING');

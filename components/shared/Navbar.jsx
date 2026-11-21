@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "@/lib/auth-client";
+import ThemeToggle from "@/components/theme/ThemeToggle";
 import { Menu, X, ArrowRight, LogOut } from "lucide-react";
 
 const navLinks = [
@@ -49,20 +50,31 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/95 shadow-[0_8px_24px_rgba(20,43,69,0.06)] backdrop-blur-xl">
       <nav className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 lg:px-8">
 
-        {/* Logo */}
-        <Link
-          href="/"
-          className="shrink-0 overflow-hidden rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#35C77A]"
-        >
-          <Image
-            src="/images/logoo.png"
-            alt="Equiply"
-            width={2350}
-            height={1150}
-            priority
-            className="h-14 w-auto scale-125 object-contain transition-transform duration-300 md:h-16"
-          />
-        </Link>
+        {/* Logo + Theme Toggle */}
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <Link
+            href="/"
+            className="shrink-0 overflow-hidden rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#35C77A]"
+          >
+            <Image
+              src="/images/logoo.png"
+              alt="Equiply"
+              width={2350}
+              height={1150}
+              priority
+              className="block h-14 w-auto scale-125 object-contain transition-transform duration-300 md:h-16 dark:hidden"
+            />
+            <Image
+              src="/images/footerlogo.png"
+              alt="Equiply"
+              width={2350}
+              height={1150}
+              className="hidden h-14 w-auto scale-125 object-contain transition-transform duration-300 md:h-16 dark:block"
+            />
+          </Link>
+
+          <ThemeToggle />
+        </div>
 
         {/* Desktop Navigation */}
         <div className="hidden items-center gap-1 md:flex">
