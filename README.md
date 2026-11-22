@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Equiply | Equipment Rental Platform
 
-## Getting Started
+<p align="center">
+  **Rent Smart. Do More.**
+</p>
 
-First, run the development server:
+A modern equipment rental platform where users can discover and rent equipment, while owners can manage their listings and track rental activities.
+
+**Live Demo:** https://equiply-client.vercel.app/
+
+**Backend API:** https://equiply-server.vercel.app/
+
+## ✨ Features
+
+- **Browse Equipment:** Explore approved equipment with search, category filters, sorting, and availability filters.
+- **Equipment Details:** View equipment information, pricing, location, and rental terms.
+- **Favorites:** Save and manage favorite equipment.
+- **Rental Booking:** Select rental dates and quantities with real-time availability checks.
+- **Secure Authentication:** Email/password login and Google sign-in support.
+- **Owner Dashboard:** Add, edit, delete, and manage equipment listings.
+- **Equipment Approval:** Track equipment approval status.
+- **Rental Management:** View bookings and manage rental requests.
+- **Payment Integration:** Complete rental payments through Stripe Checkout.
+- **Analytics:** View rental and equipment statistics.
+- **User Profile:** Manage personal profile information.
+- **Responsive UI:** Modern interface with dark and light themes.
+
+## 🛠️ Tech Stack
+
+| Category | Technologies |
+|---|---|
+| Framework | Next.js |
+| Language | JavaScript |
+| Styling | Tailwind CSS, shadcn/ui |
+| Authentication | Better Auth |
+| Animations | Framer Motion |
+| Icons | Lucide React |
+| Payment | Stripe |
+| API Communication | Fetch API |
+
+## ⚙️ Getting Started
+
+**1. Clone the repository**
+
+```bash
+git clone <your-client-repository-url>
+cd equiply_client
+```
+
+**2. Install dependencies**
+
+```bash
+npm install
+```
+
+**3. Configure environment variables**
+
+Create a `.env.local` file:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5000
+```
+
+**4. Run the development server**
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000 to view the application.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## 🌐 Deployment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The frontend is deployed on Vercel.
 
-## Learn More
+**Live Application:** https://equiply-client.vercel.app/
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+<p align="center">
+  Built with ❤️ for smarter equipment rentals.
+</p>
