@@ -183,8 +183,13 @@
   background-color: var(--eq-surface-3);
 }
 
-.dark .\!bg-\[\#f6f8fb\] {
-  background-color: var(--eq-bg) !important;
+/* Tailwind's `!` utilities are emitted inside @layer utilities. For
+   !important declarations the earlier layer wins, so this override has to
+   live in @layer base to beat `.bg-\[\#f6f8fb\]` on the dashboard shell. */
+@layer base {
+  .dark .\!bg-\[\#f6f8fb\] {
+    background-color: var(--eq-bg) !important;
+  }
 }
 
 /* ---- Borders / dividers ---- */
