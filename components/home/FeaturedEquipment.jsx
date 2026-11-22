@@ -174,13 +174,23 @@ export default function FeaturedEquipment() {
           </div>
         )}
 
+        {/* Favorite Login Note */}
+        <div className="mt-12 flex justify-center">
+          <p className="rounded-full border border-[#35C77A]/30 bg-[#35C77A]/10 px-5 py-2.5 text-center text-sm text-[#142B45]">
+            <span className="font-semibold text-[#229c5b]">
+              Want to add favorites?
+            </span>{" "}
+            <i className="text-red-400">Please log in first, then explore all equipment.</i>
+          </p>
+        </div>
+
         {/* Explore All Button */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="mt-12 text-center"
+          className="mt-6 text-center"
         >
           <Link
             href="/equipment"
