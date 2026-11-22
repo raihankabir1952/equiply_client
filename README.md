@@ -43,7 +43,7 @@ A modern equipment rental platform where users can discover and rent equipment, 
 **1. Clone the repository**
 
 ```bash
-git clone <your-client-repository-url>
+git clone https://github.com/raihankabir1952/equiply_client
 cd equiply_client
 ```
 
